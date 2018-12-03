@@ -8,12 +8,12 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http;
     using System.Threading.Tasks;
 
-    public class ClientCredentialFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class ClientCredentialProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private readonly string ResourceUrl;
         private readonly bool ForceRefresh;
 
-        public ClientCredentialFlowProvider(
+        public ClientCredentialProvider(
             ConfidentialClientApplication confidentialClientApplication,
             string resourceUrl,
             bool forceRefresh = false)
@@ -24,7 +24,7 @@ namespace Microsoft.Graph.Auth
             ForceRefresh = forceRefresh;
         }
 
-        public ClientCredentialFlowProvider(
+        public ClientCredentialProvider(
             string clientId,
             string redirectUri,
             ClientCredential clientCredential,
@@ -38,7 +38,7 @@ namespace Microsoft.Graph.Auth
             ForceRefresh = forceRefresh;
         }
 
-        public ClientCredentialFlowProvider(
+        public ClientCredentialProvider(
             string clientId,
             string authority,
             string redirectUri,

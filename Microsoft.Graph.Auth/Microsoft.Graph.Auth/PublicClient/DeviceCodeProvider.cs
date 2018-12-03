@@ -10,13 +10,13 @@ namespace Microsoft.Graph.Auth
     using System.Threading.Tasks;
     using Microsoft.Identity.Client;
     // Only works for tenanted or work & school accounts
-    public class DeviceCodeFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class DeviceCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private Func<DeviceCodeResult, Task> DeviceCodeResultCallback;
         private string ExtraQueryParameters;
         private CancellationToken CancellationToken;
 
-        public DeviceCodeFlowProvider(
+        public DeviceCodeProvider(
             PublicClientApplication publicClientApplication,
             string[] scopes,
             Func<DeviceCodeResult, Task> deviceCodeResultCallback,
@@ -30,7 +30,7 @@ namespace Microsoft.Graph.Auth
             CancellationToken = cancellationToken == null ? CancellationToken.None : (CancellationToken)cancellationToken;
         }
 
-        public DeviceCodeFlowProvider(
+        public DeviceCodeProvider(
             string clientId,
             string authority,
             string[] scopes,
@@ -45,7 +45,7 @@ namespace Microsoft.Graph.Auth
             CancellationToken = cancellationToken == null ? CancellationToken.None : (CancellationToken)cancellationToken;
         }
 
-        public DeviceCodeFlowProvider(
+        public DeviceCodeProvider(
             string clientId,
             string authority,
             TokenCache userTokenCache,

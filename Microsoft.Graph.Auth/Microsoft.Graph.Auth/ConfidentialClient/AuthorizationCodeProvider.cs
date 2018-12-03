@@ -7,15 +7,15 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Identity.Client;
-    public class AuthenticationCodeFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class AuthorizationCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        public AuthenticationCodeFlowProvider(ConfidentialClientApplication confidentialClientApplication, string[] scopes)
+        public AuthorizationCodeProvider(ConfidentialClientApplication confidentialClientApplication, string[] scopes)
             : base(scopes)
         {
             ClientApplication = confidentialClientApplication;
         }
 
-        public AuthenticationCodeFlowProvider(
+        public AuthorizationCodeProvider(
             string clientId,
             string redirectUri,
             ClientCredential clientCredential,
@@ -26,7 +26,7 @@ namespace Microsoft.Graph.Auth
             ClientApplication = new ConfidentialClientApplication(clientId, redirectUri, clientCredential, userTokenCache, null);
         }
 
-        public AuthenticationCodeFlowProvider(
+        public AuthorizationCodeProvider(
             string clientId,
             string authority,
             string redirectUri,

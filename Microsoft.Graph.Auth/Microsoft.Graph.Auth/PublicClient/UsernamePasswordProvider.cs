@@ -11,11 +11,11 @@ namespace Microsoft.Graph.Auth
 #if NET45 || NET_CORE
     // Works for work & school accounts
     // Only available on .Net & .Net core, not available for UWP
-    public class UsernamePasswordFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class UsernamePasswordProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private string Username;
         private SecureString SecurePassword;
-        public UsernamePasswordFlowProvider(
+        public UsernamePasswordProvider(
             PublicClientApplication publicClientApplication,
             string[] scopes,
             string username,
@@ -27,7 +27,7 @@ namespace Microsoft.Graph.Auth
             SecurePassword = securePassword;
         }
 
-        public UsernamePasswordFlowProvider(
+        public UsernamePasswordProvider(
             string clientId,
             string authority,
             string[] scopes,
@@ -40,7 +40,7 @@ namespace Microsoft.Graph.Auth
             SecurePassword = securePassword;
         }
 
-        public UsernamePasswordFlowProvider(
+        public UsernamePasswordProvider(
             string clientId,
             string authority,
             TokenCache userTokenCache,

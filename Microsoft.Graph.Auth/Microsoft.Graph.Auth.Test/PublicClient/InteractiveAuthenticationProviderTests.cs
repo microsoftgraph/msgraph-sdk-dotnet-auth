@@ -12,10 +12,10 @@ using System.Threading.Tasks;
 namespace Microsoft.Graph.Auth.Test.PublicClient
 {
     [TestClass]
-    public class IntergratedWindowsAuthFlowProviderTests
+    public class InteractiveAuthenticationProviderTests
     {
         private TokenCache tokenCache;
-        private IntergratedWindowsAuthFlowProvider intergratedWindowsAuthFlowProvider;
+        private InteractiveAuthenticationProvider interactiveFlowProvider;
         private IPublicClientApplication publicClientAppMock;
         private string clientId = "client-id";
         private string commonAuthority = "https://login.microsoftonline.com/common/";
@@ -29,21 +29,21 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             tokenCache = new TokenCache();
-            intergratedWindowsAuthFlowProvider = new IntergratedWindowsAuthFlowProvider(clientId, organizationsAuthority, tokenCache, scopes);
+            interactiveFlowProvider = new InteractiveAuthenticationProvider(clientId, scopes);
         }
 
         [TestMethod]
-        public void IntergratedWindowsAuthFlow_ConstructorWithNullableParams()
+        public void InteractiveAuthenticationProvider_ConstructorWithNullableParams()
         {
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(intergratedWindowsAuthFlowProvider.ClientApplication);
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.IsInstanceOfType(interactiveFlowProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(interactiveFlowProvider.ClientApplication);
+            Assert.IsInstanceOfType(interactiveFlowProvider.ClientApplication, typeof(IPublicClientApplication));
         }
 
         [TestMethod]
-        public void IntergratedWindowsAuthFlow_ConstructorWithoutNullableParams()
+        public void InteractiveAuthenticationProvider_ConstructorWithoutNullableParams()
         {
-            var authProvider = new IntergratedWindowsAuthFlowProvider(clientId, organizationsAuthority, tokenCache, scopes, mockUserAccount.Username);
+            var authProvider = new InteractiveAuthenticationProvider(clientId, scopes, mockUserAccount, commonAuthority, tokenCache, UIBehavior.SelectAccount, "extra", null, new UIParent());
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(authProvider.ClientApplication);
@@ -51,48 +51,44 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public async Task IntergratedWindowsAuthFlow_WithNoUserAccountInCache()
+        public async Task InteractiveAuthenticationProvider_WithNoUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            var mockAuthResult2 = MockAuthResult.GetAuthenticationResult(scopes);
 
             publicClientAppMock = Substitute.For<IPublicClientApplication>();
             publicClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount>());
-            publicClientAppMock.AcquireTokenSilentAsync(scopes, mockUserAccount).ReturnsForAnyArgs(mockAuthResult);
-            publicClientAppMock.AcquireTokenByIntegratedWindowsAuthAsync(scopes, mockUserAccount.Username).ReturnsForAnyArgs(mockAuthResult2);
-            publicClientAppMock.AcquireTokenByIntegratedWindowsAuthAsync(scopes).ReturnsForAnyArgs(expectedAuthResult);
+            publicClientAppMock.AcquireTokenAsync(scopes, string.Empty, UIBehavior.SelectAccount, null, null, null, null).ReturnsForAnyArgs(expectedAuthResult);
+            publicClientAppMock.AcquireTokenAsync(scopes, mockUserAccount, UIBehavior.SelectAccount, null, null, null, null).ReturnsForAnyArgs(mockAuthResult);
 
-            intergratedWindowsAuthFlowProvider.ClientApplication = publicClientAppMock;
-            await intergratedWindowsAuthFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
+            interactiveFlowProvider.ClientApplication = publicClientAppMock;
+            await interactiveFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
 
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.IsInstanceOfType(interactiveFlowProvider, typeof(IAuthenticationProvider));
+            Assert.IsInstanceOfType(interactiveFlowProvider.ClientApplication, typeof(IPublicClientApplication));
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
         }
 
         [TestMethod]
-        public async Task IntergratedWindowsAuthFlow_WithUserAccountInCache()
+        public async Task InteractiveAuthenticationProvider_WithUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "http://example.org/foo");
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            var mockAuthResult2 = MockAuthResult.GetAuthenticationResult(scopes);
 
             publicClientAppMock = Substitute.For<IPublicClientApplication>();
             publicClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount> { mockUserAccount });
             publicClientAppMock.AcquireTokenSilentAsync(scopes, mockUserAccount).ReturnsForAnyArgs(expectedAuthResult);
-            publicClientAppMock.AcquireTokenByIntegratedWindowsAuthAsync(scopes, mockUserAccount.Username).ReturnsForAnyArgs(mockAuthResult);
-            publicClientAppMock.AcquireTokenByIntegratedWindowsAuthAsync(scopes).ReturnsForAnyArgs(mockAuthResult2);
+            publicClientAppMock.AcquireTokenAsync(scopes, mockUserAccount, UIBehavior.SelectAccount, null, null, null, null).Returns(mockAuthResult);
 
-            intergratedWindowsAuthFlowProvider.ClientApplication = publicClientAppMock;
-            await intergratedWindowsAuthFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
+            interactiveFlowProvider.ClientApplication = publicClientAppMock;
+            await interactiveFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
 
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.IsInstanceOfType(interactiveFlowProvider, typeof(IAuthenticationProvider));
+            Assert.IsInstanceOfType(interactiveFlowProvider.ClientApplication, typeof(IPublicClientApplication));
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);

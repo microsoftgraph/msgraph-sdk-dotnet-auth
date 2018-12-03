@@ -13,10 +13,10 @@ using System.Threading.Tasks;
 namespace Microsoft.Graph.Auth.Test.PublicClient
 {
     [TestClass]
-    public class UsernamePasswordFlowProviderTests
+    public class UsernamePasswordProviderTests
     {
         private TokenCache tokenCache;
-        private UsernamePasswordFlowProvider intergratedWindowsAuthFlowProvider;
+        private UsernamePasswordProvider intergratedWindowsAuthFlowProvider;
         private IPublicClientApplication publicClientAppMock;
         private string clientId = "client-id";
         private string commonAuthority = "https://login.microsoftonline.com/common/";
@@ -32,11 +32,11 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             securePassword = GetSecureString("veryGoodPassword");
             tokenCache = new TokenCache();
-            intergratedWindowsAuthFlowProvider = new UsernamePasswordFlowProvider(clientId, organizationsAuthority, tokenCache, scopes, mockUserAccount.Username, securePassword);
+            intergratedWindowsAuthFlowProvider = new UsernamePasswordProvider(clientId, organizationsAuthority, tokenCache, scopes, mockUserAccount.Username, securePassword);
         }
 
         [TestMethod]
-        public void UsernamePasswordFlow_ConstructorWithNullableParams()
+        public void UsernamePasswordProvider_ConstructorWithNullableParams()
         {
             Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(intergratedWindowsAuthFlowProvider.ClientApplication);
@@ -44,9 +44,9 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public void UsernamePasswordFlow_ConstructorWithoutNullableParams()
+        public void UsernamePasswordProvider_ConstructorWithoutNullableParams()
         {
-            var authProvider = new UsernamePasswordFlowProvider(clientId, organizationsAuthority, scopes, mockUserAccount.Username, securePassword);
+            var authProvider = new UsernamePasswordProvider(clientId, organizationsAuthority, scopes, mockUserAccount.Username, securePassword);
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(authProvider.ClientApplication);
@@ -54,7 +54,7 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public async Task UsernamePasswordFlow_WithNoUserAccountInCache()
+        public async Task UsernamePasswordProvider_WithNoUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
@@ -76,7 +76,7 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public async Task UsernamePasswordFlow_WithUserAccountInCache()
+        public async Task UsernamePasswordProvider_WithUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "http://example.org/foo");
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);

@@ -12,7 +12,7 @@ namespace Microsoft.Graph.Auth
         LoginHint,
         Account
     }
-    public class InteractiveFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class InteractiveAuthenticationProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private InteractiveFlowType InteractiveFlowType;
         private IAccount Account;
@@ -23,7 +23,7 @@ namespace Microsoft.Graph.Auth
         private UIParent UIParent;
 
         // LoginHint
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             PublicClientApplication publicClientApplication,
             string[] scopes,
             string loginHint = null,
@@ -42,7 +42,7 @@ namespace Microsoft.Graph.Auth
             UIParent = uiParent;
         }
 
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             string clientId,
             string[] scopes,
             string loginHint = null,
@@ -61,7 +61,7 @@ namespace Microsoft.Graph.Auth
             UIParent = uiParent;
         }
 
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             string clientId,
             string authority,
             string[] scopes,
@@ -81,7 +81,7 @@ namespace Microsoft.Graph.Auth
             UIParent = uiParent;
         }
 
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             string clientId,
             string authority,
             TokenCache userTokenCache,
@@ -103,7 +103,7 @@ namespace Microsoft.Graph.Auth
         }
 
         // User
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             PublicClientApplication publicClientApplication,
             string[] scopes,
             IAccount account,
@@ -122,7 +122,7 @@ namespace Microsoft.Graph.Auth
             UIParent = uiParent;
         }
 
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             string clientId,
             string[] scopes,
             IAccount account,
@@ -142,7 +142,7 @@ namespace Microsoft.Graph.Auth
             UIParent = uiParent;
         }
 
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             string clientId,
             string[] scopes,
             IAccount account,
@@ -162,7 +162,7 @@ namespace Microsoft.Graph.Auth
             UIParent = uiParent;
         }
 
-        public InteractiveFlowProvider(
+        public InteractiveAuthenticationProvider(
             string clientId,
             string[] scopes,
             IAccount account,

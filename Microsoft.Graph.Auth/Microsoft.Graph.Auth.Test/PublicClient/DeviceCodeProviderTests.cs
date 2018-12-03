@@ -11,10 +11,10 @@ using NSubstitute;
 namespace Microsoft.Graph.Auth.Test.PublicClient
 {
     [TestClass]
-    public class DeviceCodeFlowProviderTests
+    public class DeviceCodeProviderTests
     {
         private TokenCache tokenCache;
-        private DeviceCodeFlowProvider deviceCodeFlowProvider;
+        private DeviceCodeProvider deviceCodeFlowProvider;
         private IPublicClientApplication publicClientAppMock;
         private const string clientId = "client-id";
         private const string commonAuthority = "https://login.microsoftonline.com/common/";
@@ -29,11 +29,11 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             publicClientAppMock = Substitute.For<IPublicClientApplication>();
             tokenCache = new TokenCache();
-            deviceCodeFlowProvider = new DeviceCodeFlowProvider(clientId, organizationsAuthority, scopes, DeviceCodeCallback);
+            deviceCodeFlowProvider = new DeviceCodeProvider(clientId, organizationsAuthority, scopes, DeviceCodeCallback);
         }
 
         [TestMethod]
-        public void DeviceCodeFlow_ConstructorWithNullableParams()
+        public void DeviceCodeProvider_ConstructorWithNullableParams()
         {
             Assert.IsInstanceOfType(deviceCodeFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(deviceCodeFlowProvider.ClientApplication);
@@ -41,9 +41,9 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public void DeviceCodeFlow_ConstructorWithoutNullableParams()
+        public void DeviceCodeProvider_ConstructorWithoutNullableParams()
         {
-            var authProvider = new DeviceCodeFlowProvider(clientId, organizationsAuthority, scopes, DeviceCodeCallback, "extra", new CancellationToken());
+            var authProvider = new DeviceCodeProvider(clientId, organizationsAuthority, scopes, DeviceCodeCallback, "extra", new CancellationToken());
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(authProvider.ClientApplication);
@@ -51,7 +51,7 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public async Task DeviceCodeFlow_WithNoUserAccountInCache()
+        public async Task DeviceCodeProvider_WithNoUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
@@ -71,7 +71,7 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         }
 
         [TestMethod]
-        public async Task DeviceCodeFlow_WithUserAccountInCache()
+        public async Task DeviceCodeProvider_WithUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);

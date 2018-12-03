@@ -8,10 +8,10 @@ namespace Microsoft.Graph.Auth
     using System.Threading.Tasks;
     using Microsoft.Identity.Client;
 
-    public class BehalfOfFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class OnBehalfOfProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private UserAssertion UserAssertion;
-        public BehalfOfFlowProvider(
+        public OnBehalfOfProvider(
             ConfidentialClientApplication confidentialClientApplication,
             string[] scopes,
             UserAssertion userAssertion)
@@ -21,7 +21,7 @@ namespace Microsoft.Graph.Auth
             UserAssertion = userAssertion;
         }
 
-        public BehalfOfFlowProvider(
+        public OnBehalfOfProvider(
             string clientId,
             string redirectUri,
             ClientCredential clientCredential,
@@ -34,7 +34,7 @@ namespace Microsoft.Graph.Auth
             UserAssertion = userAssertion;
         }
 
-        public BehalfOfFlowProvider(
+        public OnBehalfOfProvider(
             string clientId,
             string authority,
             string redirectUri,

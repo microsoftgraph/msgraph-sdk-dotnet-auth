@@ -10,10 +10,10 @@ namespace Microsoft.Graph.Auth
 #if NET45 || NET_CORE
     // Works for tenanted & work & school accounts
     // Only available on .Net & .Net core and UWP
-    public class IntergratedWindowsAuthFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class IntergratedWindowsAuthenticationProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private string Username;
-        public IntergratedWindowsAuthFlowProvider(
+        public IntergratedWindowsAuthenticationProvider(
            PublicClientApplication publicClientApplication,
            string[] scopes)
            : base(scopes)
@@ -21,7 +21,7 @@ namespace Microsoft.Graph.Auth
             ClientApplication = publicClientApplication;
         }
 
-        public IntergratedWindowsAuthFlowProvider(
+        public IntergratedWindowsAuthenticationProvider(
            string clientId,
            string authority,
            string[] scopes)
@@ -30,7 +30,7 @@ namespace Microsoft.Graph.Auth
             ClientApplication = new PublicClientApplication(clientId, authority);
         }
 
-        public IntergratedWindowsAuthFlowProvider(
+        public IntergratedWindowsAuthenticationProvider(
             string clientId,
             string authority,
             TokenCache userTokenCache,
@@ -41,7 +41,7 @@ namespace Microsoft.Graph.Auth
         }
 
 #if !NET_CORE
-        public IntergratedWindowsAuthFlowProvider(
+        public IntergratedWindowsAuthenticationProvider(
            PublicClientApplication publicClientApplication,
            string[] scopes,
            string username)
@@ -50,7 +50,7 @@ namespace Microsoft.Graph.Auth
             ClientApplication = publicClientApplication;
             Username = username;
         }
-        public IntergratedWindowsAuthFlowProvider(
+        public IntergratedWindowsAuthenticationProvider(
             string clientId,
             string authority,
             string[] scopes, 
@@ -60,7 +60,7 @@ namespace Microsoft.Graph.Auth
             ClientApplication = new PublicClientApplication(clientId, authority);
             Username = username;
         }
-        public IntergratedWindowsAuthFlowProvider(
+        public IntergratedWindowsAuthenticationProvider(
             string clientId,
             string authority,
             TokenCache userTokenCache,
