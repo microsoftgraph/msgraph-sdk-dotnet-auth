@@ -1,0 +1,111 @@
+﻿using Microsoft.Graph.Auth.Test.Mocks;
+using Microsoft.Identity.Client;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NSubstitute;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Microsoft.Graph.Auth.Test.PublicClient
+{
+    [TestClass]
+    public class UsernamePasswordFlowProviderTests
+    {
+        private TokenCache tokenCache;
+        private UsernamePasswordFlowProvider intergratedWindowsAuthFlowProvider;
+        private IPublicClientApplication publicClientAppMock;
+        private string clientId = "client-id";
+        private string commonAuthority = "https://login.microsoftonline.com/common/";
+        private string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
+        private string[] scopes = new string[] { "User.Read" };
+        private MockUserAccount mockUserAccount, mockUserAccount2;
+        private SecureString securePassword;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
+            mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
+            securePassword = GetSecureString("veryGoodPassword");
+            tokenCache = new TokenCache();
+            intergratedWindowsAuthFlowProvider = new UsernamePasswordFlowProvider(clientId, organizationsAuthority, tokenCache, scopes, mockUserAccount.Username, securePassword);
+        }
+
+        [TestMethod]
+        public void UsernamePasswordFlow_ConstructorWithNullableParams()
+        {
+            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(intergratedWindowsAuthFlowProvider.ClientApplication);
+            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+        }
+
+        [TestMethod]
+        public void UsernamePasswordFlow_ConstructorWithoutNullableParams()
+        {
+            var authProvider = new UsernamePasswordFlowProvider(clientId, organizationsAuthority, scopes, mockUserAccount.Username, securePassword);
+
+            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(authProvider.ClientApplication);
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
+        }
+
+        [TestMethod]
+        public async Task UsernamePasswordFlow_WithNoUserAccountInCache()
+        {
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
+            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+            var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+
+            publicClientAppMock = Substitute.For<IPublicClientApplication>();
+            publicClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount>());
+            publicClientAppMock.AcquireTokenSilentAsync(scopes, mockUserAccount).ReturnsForAnyArgs(mockAuthResult);
+            publicClientAppMock.AcquireTokenByUsernamePasswordAsync(scopes, mockUserAccount.Username, securePassword).ReturnsForAnyArgs(expectedAuthResult);
+
+            intergratedWindowsAuthFlowProvider.ClientApplication = publicClientAppMock;
+            await intergratedWindowsAuthFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
+
+            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
+            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
+        }
+
+        [TestMethod]
+        public async Task UsernamePasswordFlow_WithUserAccountInCache()
+        {
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "http://example.org/foo");
+            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+            var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+
+            publicClientAppMock = Substitute.For<IPublicClientApplication>();
+            publicClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount> { mockUserAccount });
+            publicClientAppMock.AcquireTokenSilentAsync(scopes, mockUserAccount).ReturnsForAnyArgs(expectedAuthResult);
+            publicClientAppMock.AcquireTokenByUsernamePasswordAsync(scopes, mockUserAccount.Username, securePassword).ReturnsForAnyArgs(mockAuthResult);
+
+            intergratedWindowsAuthFlowProvider.ClientApplication = publicClientAppMock;
+            await intergratedWindowsAuthFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
+
+            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
+            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
+        }
+
+        private SecureString GetSecureString(string strValue)
+        {
+            var secureString = new SecureString();
+            foreach (char charItem in strValue.ToCharArray())
+            {
+                secureString.AppendChar(charItem);
+            }
+
+            return secureString;
+        }
+    }
+}

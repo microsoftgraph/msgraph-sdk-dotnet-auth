@@ -1,84 +1,204 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Identity.Client;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using Microsoft.Identity.Client;
     internal enum InteractiveFlowType
     {
-       LoginHint,
-       User
+        LoginHint,
+        Account
     }
     public class InteractiveFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private InteractiveFlowType interactiveFlowType;
-        private IAccount _account;
-        private UIBehavior _behavior;
-        private string _loginHint;
-        private string _extraQueryParameters;
-        private string[] _extraScopesToConsent;
-        private string _authority;
-        private UIParent _parent;
+        private InteractiveFlowType InteractiveFlowType;
+        private IAccount Account;
+        private UIBehavior UIBehavior;
+        private string LoginHint;
+        private string ExtraQueryParameters;
+        private string[] ExtraScopesToConsent;
+        private UIParent UIParent;
 
-        // LogiHint
-        public InteractiveFlowProvider(PublicClientApplication clientApplication,
+        // LoginHint
+        public InteractiveFlowProvider(
+            PublicClientApplication publicClientApplication,
             string[] scopes,
             string loginHint = null,
-            UIBehavior? behavior = null,
+            UIBehavior? uiBehavior = null,
             string extraQueryParameters = null,
             string[] extraScopesToConsent = null,
-            string authority = null,
-            UIParent parent = null)
-            : base(clientApplication, scopes)
+            UIParent uiParent = null)
+            : base(scopes)
         {
-            interactiveFlowType = InteractiveFlowType.LoginHint;
-            _behavior = (behavior == null) ? UIBehavior.SelectAccount : (UIBehavior)behavior;
-            _loginHint = loginHint;
-            _extraQueryParameters = extraQueryParameters;
-            _extraScopesToConsent = extraScopesToConsent;
-            _authority = (authority == null) ? clientApplication.Authority : authority; ;
-            _parent = parent;
+            ClientApplication = publicClientApplication;
+            InteractiveFlowType = InteractiveFlowType.LoginHint;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            LoginHint = loginHint;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
+        }
+
+        public InteractiveFlowProvider(
+            string clientId,
+            string[] scopes,
+            string loginHint = null,
+            UIBehavior? uiBehavior = null,
+            string extraQueryParameters = null,
+            string[] extraScopesToConsent = null,
+            UIParent uiParent = null)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId);
+            InteractiveFlowType = InteractiveFlowType.LoginHint;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            LoginHint = loginHint;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
+        }
+
+        public InteractiveFlowProvider(
+            string clientId,
+            string authority,
+            string[] scopes,
+            string loginHint = null,
+            UIBehavior? uiBehavior = null,
+            string extraQueryParameters = null,
+            string[] extraScopesToConsent = null,
+            UIParent uiParent = null)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId, authority);
+            InteractiveFlowType = InteractiveFlowType.LoginHint;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            LoginHint = loginHint;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
+        }
+
+        public InteractiveFlowProvider(
+            string clientId,
+            string authority,
+            TokenCache userTokenCache,
+            string[] scopes,
+            string loginHint = null,
+            UIBehavior? uiBehavior = null,
+            string extraQueryParameters = null,
+            string[] extraScopesToConsent = null,
+            UIParent uiParent = null)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId, authority, userTokenCache);
+            InteractiveFlowType = InteractiveFlowType.LoginHint;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            LoginHint = loginHint;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
         }
 
         // User
         public InteractiveFlowProvider(
-            PublicClientApplication clientApplication,
+            PublicClientApplication publicClientApplication,
             string[] scopes,
             IAccount account,
-            UIBehavior? behavior = null,
+            UIBehavior? uiBehavior = null,
+            string extraQueryParameters = null,
+            string[] extraScopesToConsent = null,
+            UIParent uiParent = null)
+            : base(scopes)
+        {
+            ClientApplication = publicClientApplication;
+            InteractiveFlowType = InteractiveFlowType.Account;
+            Account = account;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
+        }
+
+        public InteractiveFlowProvider(
+            string clientId,
+            string[] scopes,
+            IAccount account,
+            UIBehavior? uiBehavior = null,
             string extraQueryParameters = null,
             string[] extraScopesToConsent = null,
             string authority = null,
-            UIParent parent = null)
-            :base(clientApplication, scopes)
+            UIParent uiParent = null)
+            : base(scopes)
         {
-            interactiveFlowType = InteractiveFlowType.User;
-            _account = account;
-            _behavior = (behavior == null) ? UIBehavior.SelectAccount : (UIBehavior) behavior;
-            _extraQueryParameters = extraQueryParameters;
-            _extraScopesToConsent = extraScopesToConsent;
-            _authority = (authority == null) ? clientApplication.Authority : authority;
-            _parent = parent;
+            ClientApplication = new PublicClientApplication(clientId);
+            InteractiveFlowType = InteractiveFlowType.Account;
+            Account = account;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
         }
+
+        public InteractiveFlowProvider(
+            string clientId,
+            string[] scopes,
+            IAccount account,
+            string authority,
+            UIBehavior? uiBehavior = null,
+            string extraQueryParameters = null,
+            string[] extraScopesToConsent = null,
+            UIParent uiParent = null)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId, authority);
+            InteractiveFlowType = InteractiveFlowType.Account;
+            Account = account;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
+        }
+
+        public InteractiveFlowProvider(
+            string clientId,
+            string[] scopes,
+            IAccount account,
+            string authority,
+            TokenCache userTokenCache,
+            UIBehavior? uiBehavior = null,
+            string extraQueryParameters = null,
+            string[] extraScopesToConsent = null,
+            UIParent uiParent = null)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId, authority, userTokenCache);
+            InteractiveFlowType = InteractiveFlowType.Account;
+            Account = account;
+            UIBehavior = (uiBehavior == null) ? UIBehavior.SelectAccount : (UIBehavior)uiBehavior;
+            ExtraQueryParameters = extraQueryParameters;
+            ExtraScopesToConsent = extraScopesToConsent;
+            UIParent = uiParent;
+        }
+
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
         {
             await AddTokenToRequestAsync(request);
         }
 
-        internal override async Task<string> GetNewAccessTokenAsync()
+        internal override async Task<AuthenticationResult> GetNewAccessTokenAsync()
         {
             AuthenticationResult authResult = null;
-            var publicClientApplication = ClientApplication as PublicClientApplication;
+            var publicClientApplication = (IPublicClientApplication)ClientApplication;
 
-            if (interactiveFlowType == InteractiveFlowType.LoginHint)
-                authResult = await publicClientApplication.AcquireTokenAsync(Scopes, _loginHint, _behavior, _extraQueryParameters, _extraScopesToConsent, _authority, _parent);
-            else if (interactiveFlowType == InteractiveFlowType.User)
-                authResult = await publicClientApplication.AcquireTokenAsync(Scopes, _account, _behavior, _extraQueryParameters, _extraScopesToConsent, _authority, _parent);
+            if (InteractiveFlowType == InteractiveFlowType.LoginHint)
+                authResult = await publicClientApplication.AcquireTokenAsync(Scopes, LoginHint, UIBehavior, ExtraQueryParameters, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+            else if (InteractiveFlowType == InteractiveFlowType.Account)
+                authResult = await publicClientApplication.AcquireTokenAsync(Scopes, Account, UIBehavior, ExtraQueryParameters, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
 
-            return authResult.AccessToken;
+            return authResult;
         }
     }
 }

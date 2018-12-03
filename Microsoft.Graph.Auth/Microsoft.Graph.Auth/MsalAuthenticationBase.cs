@@ -1,60 +1,92 @@
-﻿using Microsoft.Identity.Client;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Identity.Client;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using System.Net.Http.Headers;
+    using System;
+    /// <summary>
+    /// Abstract class containing common API methods and properties to retreive an access token. The providers extend this class
+    /// </summary>
     public abstract class MsalAuthenticationBase
     {
-        public ClientApplicationBase ClientApplication { get;}
-        public string[] Scopes { get; }
+        /// <summary>
+        /// A <see cref="ClientApplicationBase"/> property
+        /// </summary>
+        internal IClientApplicationBase ClientApplication { get; set; }
 
-        public MsalAuthenticationBase(ClientApplicationBase clientApplication, string[] scopes)
+        /// <summary>
+        /// A scopes property
+        /// </summary>
+        internal string[] Scopes { get; }
+
+        /// <summary>
+        /// Constructs a new <see cref="MsalAuthenticationBase"/>
+        /// </summary>
+        /// <param name="scopes">Scopes requested to access a protected API</param>
+        public MsalAuthenticationBase(string[] scopes)
         {
-            ClientApplication = clientApplication;
             Scopes = scopes;
         }
 
-        private async Task<string> GetAccessTokenSilentAsync()
+        /// <summary>
+        /// Attepmts to acquire access token form the token cache by calling AcquireTokenSilentAsync
+        /// </summary>
+        /// <returns></returns>
+        private async Task<AuthenticationResult> GetAccessTokenSilentAsync()
         {
-            string accessToken = null;
+            AuthenticationResult authenticationResult = null;
             IEnumerable<IAccount> users = await ClientApplication.GetAccountsAsync();
             if (users.Any())
             {
                 try
                 {
-                    AuthenticationResult authResult = await ClientApplication.AcquireTokenSilentAsync(Scopes, users.FirstOrDefault());
-                    accessToken = authResult.AccessToken;
+                    authenticationResult = await ClientApplication.AcquireTokenSilentAsync(Scopes, users.FirstOrDefault());
                 }
-                catch (Exception)
+                catch (MsalUiRequiredException)
                 {
-                    // TODO: Handle specific MSAL authentication
                 }
             }
-            return accessToken;
+            return authenticationResult;
         }
 
-        private async Task<string> GetAccessTokenAsync()
+        /// <summary>
+        /// Decides whether to use an access token from the token cache or requests a new access token
+        /// </summary>
+        /// <returns></returns>
+        private async Task<AuthenticationResult> GetAccessTokenAsync(bool skipSilentTokenCheck)
         {
-            string accessToken = await GetAccessTokenSilentAsync();
-            if (accessToken == null)
+            AuthenticationResult authenticationResult = skipSilentTokenCheck ? null : await GetAccessTokenSilentAsync();
+            if (authenticationResult == null)
             {
-                accessToken = await GetNewAccessTokenAsync();
+                authenticationResult = await GetNewAccessTokenAsync();
             }
 
-            return accessToken;
+            return authenticationResult;
         }
 
-        internal async Task AddTokenToRequestAsync(HttpRequestMessage requestMessage)
+        /// <summary>
+        /// Adds access token to <see cref="HttpRequestMessage"/> authorization hrader
+        /// </summary>
+        /// <param name="httpRequestMessage"></param>
+        /// <returns></returns>
+        internal async Task AddTokenToRequestAsync(HttpRequestMessage httpRequestMessage, bool skipSilentTokenCheck = false)
         {
-            string accessToken = await GetAccessTokenAsync();
-            requestMessage.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("bearer", accessToken);
+            AuthenticationResult authenticationResult = await GetAccessTokenAsync(skipSilentTokenCheck).ConfigureAwait(false);
+            if (authenticationResult != null)
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        internal abstract Task<string> GetNewAccessTokenAsync();
+        /// <summary>
+        /// Abstract function that will be overriden by the respective authorization flow providers to specify how to retreive new access tokens
+        /// </summary>
+        /// <returns></returns>
+        internal abstract Task<AuthenticationResult> GetNewAccessTokenAsync();
     }
 }

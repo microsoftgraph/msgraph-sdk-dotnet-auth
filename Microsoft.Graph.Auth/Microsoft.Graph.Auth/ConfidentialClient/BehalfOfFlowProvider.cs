@@ -1,44 +1,65 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Identity.Client;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using Microsoft.Identity.Client;
+
     public class BehalfOfFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private UserAssertion _userAssertion;
-        private string _authority;
-
-        public BehalfOfFlowProvider(ConfidentialClientApplication confidentialClientApplication, string[] scopes, UserAssertion userAssertion)
-            : base(confidentialClientApplication, scopes)
+        private UserAssertion UserAssertion;
+        public BehalfOfFlowProvider(
+            ConfidentialClientApplication confidentialClientApplication,
+            string[] scopes,
+            UserAssertion userAssertion)
+            : base(scopes)
         {
-            _userAssertion = userAssertion;
+            ClientApplication = confidentialClientApplication;
+            UserAssertion = userAssertion;
         }
 
-        public BehalfOfFlowProvider(ConfidentialClientApplication confidentialClientApplication, string[] scopes, UserAssertion userAssertion, string authority)
-            : base(confidentialClientApplication, scopes)
+        public BehalfOfFlowProvider(
+            string clientId,
+            string redirectUri,
+            ClientCredential clientCredential,
+            TokenCache userTokenCache,
+            string[] scopes,
+            UserAssertion userAssertion)
+            : base(scopes)
         {
-            _userAssertion = userAssertion;
-            _authority = authority;
+            ClientApplication = new ConfidentialClientApplication(clientId, redirectUri, clientCredential, userTokenCache, null);
+            UserAssertion = userAssertion;
         }
 
-        internal override async Task<string> GetNewAccessTokenAsync()
+        public BehalfOfFlowProvider(
+            string clientId,
+            string authority,
+            string redirectUri,
+            ClientCredential clientCredential,
+            TokenCache userTokenCache,
+            string[] scopes,
+            UserAssertion userAssertion)
+            : base(scopes)
         {
-            AuthenticationResult authResult = null;
-            if (_authority != null)
-                authResult = await (ClientApplication as ConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, _userAssertion);
-            else
-                authResult = await (ClientApplication as ConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, _userAssertion, _authority);
-
-            return authResult.AccessToken;
+            ClientApplication = new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, userTokenCache, null);
+            UserAssertion = userAssertion;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
         {
             await AddTokenToRequestAsync(request);
+        }
+
+        internal override async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        {
+            IConfidentialClientApplication confidentialClientApplication = (IConfidentialClientApplication) ClientApplication;
+
+            AuthenticationResult authResult = await confidentialClientApplication.AcquireTokenOnBehalfOfAsync(Scopes, UserAssertion, ClientApplication.Authority);
+
+            return authResult;
         }
     }
 }

@@ -1,43 +1,76 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Identity.Client;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
+    using System;
+    using System.Net.Http;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Identity.Client;
+    // Only works for tenanted or work & school accounts
     public class DeviceCodeFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private Func<DeviceCodeResult, Task> _deviceCodeResultCallback;
-        private CancellationToken _cancellationToken;
+        private Func<DeviceCodeResult, Task> DeviceCodeResultCallback;
+        private string ExtraQueryParameters;
+        private CancellationToken CancellationToken;
 
-        public DeviceCodeFlowProvider(PublicClientApplication clientApplication, string[] scopes, Func<DeviceCodeResult, Task> deviceCodeResultCallback)
-            : base(clientApplication, scopes)
+        public DeviceCodeFlowProvider(
+            PublicClientApplication publicClientApplication,
+            string[] scopes,
+            Func<DeviceCodeResult, Task> deviceCodeResultCallback,
+            string extraQueryParameters = null,
+            CancellationToken? cancellationToken = null)
+            : base(scopes)
         {
-            _deviceCodeResultCallback = deviceCodeResultCallback;
+            ClientApplication = publicClientApplication;
+            DeviceCodeResultCallback = deviceCodeResultCallback;
+            ExtraQueryParameters = extraQueryParameters == null ? string.Empty : extraQueryParameters;
+            CancellationToken = cancellationToken == null ? CancellationToken.None : (CancellationToken)cancellationToken;
         }
 
-        public DeviceCodeFlowProvider(PublicClientApplication clientApplication, string[] scopes, Func<DeviceCodeResult, Task> deviceCodeResultCallback,
-            CancellationToken cancellationToken)
-            : base(clientApplication, scopes)
+        public DeviceCodeFlowProvider(
+            string clientId,
+            string authority,
+            string[] scopes,
+            Func<DeviceCodeResult, Task> deviceCodeResultCallback,
+            string extraQueryParameters = null,
+            CancellationToken? cancellationToken = null)
+            : base(scopes)
         {
-            _deviceCodeResultCallback = deviceCodeResultCallback;
-            _cancellationToken = cancellationToken;
+            ClientApplication = new PublicClientApplication(clientId, authority);
+            DeviceCodeResultCallback = deviceCodeResultCallback;
+            ExtraQueryParameters = extraQueryParameters ?? string.Empty;
+            CancellationToken = cancellationToken == null ? CancellationToken.None : (CancellationToken)cancellationToken;
         }
 
-        internal override async Task<string> GetNewAccessTokenAsync()
+        public DeviceCodeFlowProvider(
+            string clientId,
+            string authority,
+            TokenCache userTokenCache,
+            string[] scopes,
+            Func<DeviceCodeResult, Task> deviceCodeResultCallback,
+            string extraQueryParameters = null,
+            CancellationToken? cancellationToken = null)
+            : base(scopes)
         {
-            AuthenticationResult authResult;
-            PublicClientApplication publicClientApplication = ClientApplication as PublicClientApplication;
+            ClientApplication = new PublicClientApplication(clientId, authority, userTokenCache);
+            DeviceCodeResultCallback = deviceCodeResultCallback;
+            ExtraQueryParameters = extraQueryParameters ?? string.Empty;
+            CancellationToken = cancellationToken == null ? CancellationToken.None : (CancellationToken)cancellationToken;
+        }
 
-            if (_cancellationToken != null)
-                authResult = await publicClientApplication.AcquireTokenWithDeviceCodeAsync(Scopes, _deviceCodeResultCallback, _cancellationToken);
-            else
-                authResult = await publicClientApplication.AcquireTokenWithDeviceCodeAsync(Scopes, _deviceCodeResultCallback);
+        internal override async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        {
+            IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
+            AuthenticationResult authResult = await publicClientApplication.AcquireTokenWithDeviceCodeAsync(
+                Scopes,
+                ExtraQueryParameters,
+                DeviceCodeResultCallback,
+                CancellationToken);
 
-            return authResult.AccessToken;
+            return authResult;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)

@@ -1,44 +1,74 @@
-﻿using Microsoft.Identity.Client;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+//
 
 namespace Microsoft.Graph.Auth
 {
-    public class ClientCredentialFlowProvider: MsalAuthenticationBase, IAuthenticationProvider
+    using Microsoft.Identity.Client;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+
+    public class ClientCredentialFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private bool _forceRefresh;
-        private string _resourceUrl;
+        private readonly string ResourceUrl;
+        private readonly bool ForceRefresh;
 
-        public ClientCredentialFlowProvider(ConfidentialClientApplication confidentialClientApplication, string resourceUrl)
-            :base(confidentialClientApplication, null)
+        public ClientCredentialFlowProvider(
+            ConfidentialClientApplication confidentialClientApplication,
+            string resourceUrl,
+            bool forceRefresh = false)
+            : base(null)
         {
-            _resourceUrl = resourceUrl;
+            ClientApplication = confidentialClientApplication;
+            ResourceUrl = resourceUrl;
+            ForceRefresh = forceRefresh;
         }
 
-        public ClientCredentialFlowProvider(ConfidentialClientApplication confidentialClientApplication, string resourceUrl, bool forceRefresh)
-            : base(confidentialClientApplication, null)
+        public ClientCredentialFlowProvider(
+            string clientId,
+            string redirectUri,
+            ClientCredential clientCredential,
+            TokenCache appTokenCache,
+            string resourceUrl,
+            bool forceRefresh = false)
+            : base(null)
         {
-            _forceRefresh = forceRefresh;
-            _resourceUrl = resourceUrl;
+            ClientApplication = new ConfidentialClientApplication(clientId, redirectUri, clientCredential, null, appTokenCache);
+            ResourceUrl = resourceUrl;
+            ForceRefresh = forceRefresh;
         }
 
-        internal override async Task<string> GetNewAccessTokenAsync()
+        public ClientCredentialFlowProvider(
+            string clientId,
+            string authority,
+            string redirectUri,
+            ClientCredential clientCredential,
+            TokenCache appTokenCache,
+            string resourceUrl,
+            bool forceRefresh = false)
+            : base(null)
         {
-            AuthenticationResult authResult = null;
-            if (_forceRefresh)
-                authResult = await (ClientApplication as ConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl + "/.default" }, _forceRefresh);
-            else
-                authResult = await (ClientApplication as ConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl + "/.default" });
-
-            return authResult.AccessToken;
+            ClientApplication = new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, null, appTokenCache);
+            ResourceUrl = resourceUrl;
+            ForceRefresh = forceRefresh;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
         {
-            await AddTokenToRequestAsync(request);
+            // AcquireTokenForClientAsync will check the token, no need to call AcquireTokenSilentAsync 
+            await AddTokenToRequestAsync(request, true);
+        }
+
+        internal override async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        {
+            AuthenticationResult authResult = null;
+            IConfidentialClientApplication confidentialClientApplication = (IConfidentialClientApplication)ClientApplication;
+            if (ForceRefresh)
+                authResult = await confidentialClientApplication.AcquireTokenForClientAsync(new string[] { ResourceUrl + "/.default" }, ForceRefresh);
+            else
+                authResult = await confidentialClientApplication.AcquireTokenForClientAsync(new string[] { ResourceUrl + "/.default" });
+
+            return authResult;
         }
     }
 }

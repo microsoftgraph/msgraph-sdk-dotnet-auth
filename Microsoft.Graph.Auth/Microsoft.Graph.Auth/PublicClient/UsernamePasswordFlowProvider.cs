@@ -1,23 +1,57 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Identity.Client;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
-#if NET45
+    using System.Net.Http;
+    using System.Security;
+    using System.Threading.Tasks;
+    using Microsoft.Identity.Client;
+#if NET45 || NET_CORE
+    // Works for work & school accounts
+    // Only available on .Net & .Net core, not available for UWP
     public class UsernamePasswordFlowProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private string _username;
-        private SecureString _securePassword;
-
-        public UsernamePasswordFlowProvider(PublicClientApplication clientApplication, string[] scopes, string username, SecureString securePassword) : base(clientApplication, scopes)
+        private string Username;
+        private SecureString SecurePassword;
+        public UsernamePasswordFlowProvider(
+            PublicClientApplication publicClientApplication,
+            string[] scopes,
+            string username,
+            SecureString securePassword)
+            : base(scopes)
         {
-            _username = username;
-            _securePassword = securePassword;
+            ClientApplication = publicClientApplication;
+            Username = username;
+            SecurePassword = securePassword;
+        }
+
+        public UsernamePasswordFlowProvider(
+            string clientId,
+            string authority,
+            string[] scopes,
+            string username,
+            SecureString securePassword)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId, authority);
+            Username = username;
+            SecurePassword = securePassword;
+        }
+
+        public UsernamePasswordFlowProvider(
+            string clientId,
+            string authority,
+            TokenCache userTokenCache,
+            string[] scopes,
+            string username,
+            SecureString securePassword)
+            : base(scopes)
+        {
+            ClientApplication = new PublicClientApplication(clientId, authority, userTokenCache);
+            Username = username;
+            SecurePassword = securePassword;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage request)
@@ -25,14 +59,13 @@ namespace Microsoft.Graph.Auth
             await AddTokenToRequestAsync(request);
         }
 
-        internal override async Task<string> GetNewAccessTokenAsync()
+        internal override async Task<AuthenticationResult> GetNewAccessTokenAsync()
         {
-            AuthenticationResult authResult;
-            PublicClientApplication publicClientApplication = ClientApplication as PublicClientApplication;
+            IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
 
-            authResult = await publicClientApplication.AcquireTokenByUsernamePasswordAsync(Scopes, _username, _securePassword);
+            AuthenticationResult authResult = await publicClientApplication.AcquireTokenByUsernamePasswordAsync(Scopes, Username, SecurePassword);
 
-            return authResult.AccessToken;
+            return authResult;
         }
     }
 #endif
