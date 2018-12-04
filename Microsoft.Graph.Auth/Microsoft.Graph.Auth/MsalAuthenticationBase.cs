@@ -12,7 +12,7 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http.Headers;
     using System;
     /// <summary>
-    /// Abstract class containing common API methods and properties to retreive an access token. The providers extend this class
+    /// Abstract class containing common API methods and properties to retreive an access token. All authentication providers extend this class
     /// </summary>
     public abstract class MsalAuthenticationBase
     {
@@ -36,9 +36,8 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Attepmts to acquire access token form the token cache by calling AcquireTokenSilentAsync
+        /// Attempts to acquire access token form the token cache silently by calling AcquireTokenSilentAsync
         /// </summary>
-        /// <returns></returns>
         private async Task<AuthenticationResult> GetAccessTokenSilentAsync()
         {
             AuthenticationResult authenticationResult = null;
@@ -49,7 +48,7 @@ namespace Microsoft.Graph.Auth
                 {
                     authenticationResult = await ClientApplication.AcquireTokenSilentAsync(Scopes, users.FirstOrDefault());
                 }
-                catch (MsalUiRequiredException)
+                catch (Exception)
                 {
                 }
             }
@@ -58,8 +57,7 @@ namespace Microsoft.Graph.Auth
 
         /// <summary>
         /// Decides whether to use an access token from the token cache or requests a new access token
-        /// </summary>
-        /// <returns></returns>
+        /// </summary>>
         private async Task<AuthenticationResult> GetAccessTokenAsync(bool skipSilentTokenCheck)
         {
             AuthenticationResult authenticationResult = skipSilentTokenCheck ? null : await GetAccessTokenSilentAsync();
@@ -72,10 +70,9 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Adds access token to <see cref="HttpRequestMessage"/> authorization hrader
+        /// Gets an access token and add's it to <see cref="HttpRequestMessage"/> authorization header
         /// </summary>
         /// <param name="httpRequestMessage"></param>
-        /// <returns></returns>
         internal async Task AddTokenToRequestAsync(HttpRequestMessage httpRequestMessage, bool skipSilentTokenCheck = false)
         {
             AuthenticationResult authenticationResult = await GetAccessTokenAsync(skipSilentTokenCheck).ConfigureAwait(false);
@@ -84,9 +81,8 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Abstract function that will be overriden by the respective authorization flow providers to specify how to retreive new access tokens
+        /// Abstract method overriden by the derived class to specify how to retreive new access tokens
         /// </summary>
-        /// <returns></returns>
         internal abstract Task<AuthenticationResult> GetNewAccessTokenAsync();
     }
 }
