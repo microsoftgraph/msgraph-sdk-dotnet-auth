@@ -19,8 +19,7 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         private IPublicClientApplication publicClientAppMock;
         private string clientId = "client-id";
         private string commonAuthority = "https://login.microsoftonline.com/common/";
-        private string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
-        private string[] scopes = new string[] { "User.Read" };
+        private readonly string[] scopes = new string[] { "User.Read" };
         private MockUserAccount mockUserAccount, mockUserAccount2;
 
         [TestInitialize]

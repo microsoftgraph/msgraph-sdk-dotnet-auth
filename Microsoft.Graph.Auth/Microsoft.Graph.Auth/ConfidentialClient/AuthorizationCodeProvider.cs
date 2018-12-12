@@ -9,7 +9,15 @@ namespace Microsoft.Graph.Auth
     using Microsoft.Identity.Client;
     public class AuthorizationCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        public AuthorizationCodeProvider(ConfidentialClientApplication confidentialClientApplication, string[] scopes)
+        public string ClientId { get; }
+        public string Authority { get; }
+        public string RedirectUri { get; }
+        public ClientCredential ClientCredential { get; }
+        public ITokenCacheStorage UserTokenCache { get; }
+
+        public AuthorizationCodeProvider(
+            IConfidentialClientApplication confidentialClientApplication,
+            string[] scopes)
             : base(scopes)
         {
             ClientApplication = confidentialClientApplication;
@@ -19,11 +27,14 @@ namespace Microsoft.Graph.Auth
             string clientId,
             string redirectUri,
             ClientCredential clientCredential,
-            TokenCache userTokenCache,
+            ITokenCacheStorage userTokenCache,
             string[] scopes)
             : base(scopes)
         {
-            ClientApplication = new ConfidentialClientApplication(clientId, redirectUri, clientCredential, userTokenCache, null);
+            ClientId = clientId;
+            RedirectUri = redirectUri;
+            ClientCredential = clientCredential;
+            UserTokenCache = userTokenCache;
         }
 
         public AuthorizationCodeProvider(
@@ -31,23 +42,33 @@ namespace Microsoft.Graph.Auth
             string authority,
             string redirectUri,
             ClientCredential clientCredential,
-            TokenCache userTokenCache,
+            ITokenCacheStorage userTokenCache,
             string[] scopes)
             : base(scopes)
         {
-            ClientApplication = new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, userTokenCache, null);
+            ClientId = clientId;
+            Authority = authority;
+            RedirectUri = redirectUri;
+            ClientCredential = clientCredential;
+            UserTokenCache = userTokenCache;
         }
 
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
+            if(ClientApplication == null)
+            {
+                if(Authority == null)
+                    ClientApplication = new ConfidentialClientApplication(ClientId, RedirectUri, ClientCredential, UserTokenCache.GetTokenCacheInstance(), null);
+                else
+                    ClientApplication = new ConfidentialClientApplication(ClientId, Authority, RedirectUri, ClientCredential, UserTokenCache.GetTokenCacheInstance(), null);
+            }
+
             await AddTokenToRequestAsync(httpRequestMessage);
         }
 
         internal override async Task<AuthenticationResult> GetNewAccessTokenAsync()
         {
             await Task.FromResult(0);
-            // TODO: perform a platform specific challenge
-            // we can thrown a challenge required exception back to the user
             throw new MsalUiRequiredException(MsalAuthErrorConstants.Codes.AuthenticationChallengeRequired, MsalAuthErrorConstants.Message.AuthenticationChallengeRequired);
         }
     }

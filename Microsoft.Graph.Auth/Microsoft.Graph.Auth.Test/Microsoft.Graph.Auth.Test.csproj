@@ -89,12 +89,12 @@
     <Compile Include="ConfidentialClient\ClientCredentialProviderTests.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Mocks\MockAuthResult.cs" />
+    <Compile Include="Mocks\MockTokenCacheStorage.cs" />
     <Compile Include="Mocks\MockUserAccount.cs" />
-    <Compile Include="Mocks\StorageMock.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PublicClient\DeviceCodeProviderTests.cs" />
     <Compile Include="PublicClient\InteractiveAuthenticationProviderTests.cs" />
-    <Compile Include="PublicClient\IntergratedWindowsAuthenticationProviderTests.cs" />
+    <Compile Include="PublicClient\IntegratedWindowsAuthenticationProviderTests.cs" />
     <Compile Include="PublicClient\UsernamePasswordProviderTests.cs" />
   </ItemGroup>
   <ItemGroup>

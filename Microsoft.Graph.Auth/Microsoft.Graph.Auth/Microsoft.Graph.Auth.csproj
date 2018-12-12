@@ -11,11 +11,11 @@
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
     <PackageReference Include="Microsoft.Graph.Core" Version="1.12.0" />
     <PackageReference Include="Microsoft.Identity.Client" Version="2.5.0-preview" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
     <PackageReference Include="Microsoft.Graph.Core" Version="1.12.0" />
     <PackageReference Include="Microsoft.Identity.Client" Version="2.5.0-preview" />
   </ItemGroup>
