@@ -11,6 +11,7 @@ namespace Microsoft.Graph.Auth
     using System.Threading.Tasks;
     using System.Net.Http.Headers;
     using System;
+
     /// <summary>
     /// Abstract class containing common API methods and properties to retreive an access token. All authentication providers extend this class
     /// </summary>
@@ -27,18 +28,24 @@ namespace Microsoft.Graph.Auth
         internal string[] Scopes { get; }
 
         /// <summary>
+        /// A ClientId property
+        /// </summary>
+        internal string ClientId { get; }
+        
+        /// <summary>
         /// Constructs a new <see cref="MsalAuthenticationBase"/>
         /// </summary>
         /// <param name="scopes">Scopes requested to access a protected API</param>
-        public MsalAuthenticationBase(string[] scopes)
+        public MsalAuthenticationBase(string[] scopes, string clientId)
         {
             Scopes = scopes;
+            ClientId = clientId;
         }
 
         /// <summary>
         /// Attempts to acquire access token form the token cache silently by calling AcquireTokenSilentAsync
         /// </summary>
-        private async Task<AuthenticationResult> GetAccessTokenSilentAsync()
+        internal async Task<AuthenticationResult> GetAccessTokenSilentAsync()
         {
             AuthenticationResult authenticationResult = null;
             IEnumerable<IAccount> users = await ClientApplication.GetAccountsAsync();
@@ -54,35 +61,5 @@ namespace Microsoft.Graph.Auth
             }
             return authenticationResult;
         }
-
-        /// <summary>
-        /// Decides whether to use an access token from the token cache or requests a new access token
-        /// </summary>>
-        private async Task<AuthenticationResult> GetAccessTokenAsync(bool skipSilentTokenCheck)
-        {
-            AuthenticationResult authenticationResult = skipSilentTokenCheck ? null : await GetAccessTokenSilentAsync();
-            if (authenticationResult == null)
-            {
-                authenticationResult = await GetNewAccessTokenAsync();
-            }
-
-            return authenticationResult;
-        }
-
-        /// <summary>
-        /// Gets an access token and add's it to <see cref="HttpRequestMessage"/> authorization header
-        /// </summary>
-        /// <param name="httpRequestMessage"></param>
-        internal async Task AddTokenToRequestAsync(HttpRequestMessage httpRequestMessage, bool skipSilentTokenCheck = false)
-        {
-            AuthenticationResult authenticationResult = await GetAccessTokenAsync(skipSilentTokenCheck).ConfigureAwait(false);
-            if (authenticationResult != null)
-                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
-        }
-
-        /// <summary>
-        /// Abstract method overriden by the derived class to specify how to retreive new access tokens
-        /// </summary>
-        internal abstract Task<AuthenticationResult> GetNewAccessTokenAsync();
     }
 }

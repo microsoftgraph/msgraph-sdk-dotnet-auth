@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{8133E7EE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Graph.Auth.Test", "Microsoft.Graph.Auth.Test\Microsoft.Graph.Auth.Test.csproj", "{34205B7E-DEB7-4FF3-BD82-5B4436E761D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Graph.Auth.DotnetCore.Test", "Microsoft.Graph.Auth.DotnetCore.Test\Microsoft.Graph.Auth.DotnetCore.Test.csproj", "{070FDE27-8FC5-4A47-BCCD-8101158100B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{34205B7E-DEB7-4FF3-BD82-5B4436E761D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34205B7E-DEB7-4FF3-BD82-5B4436E761D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34205B7E-DEB7-4FF3-BD82-5B4436E761D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{070FDE27-8FC5-4A47-BCCD-8101158100B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{070FDE27-8FC5-4A47-BCCD-8101158100B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{070FDE27-8FC5-4A47-BCCD-8101158100B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{070FDE27-8FC5-4A47-BCCD-8101158100B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +38,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{B738DEF0-37EA-4A9F-B29E-6FC50D276E96} = {53104875-9332-4480-A6CD-E9C1B8A1002C}
 		{34205B7E-DEB7-4FF3-BD82-5B4436E761D2} = {8133E7EE-F069-4A2B-AA04-AFC0B26B46C7}
+		{070FDE27-8FC5-4A47-BCCD-8101158100B2} = {8133E7EE-F069-4A2B-AA04-AFC0B26B46C7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4C0D96E7-F797-4F87-94E6-BED84230C69E}

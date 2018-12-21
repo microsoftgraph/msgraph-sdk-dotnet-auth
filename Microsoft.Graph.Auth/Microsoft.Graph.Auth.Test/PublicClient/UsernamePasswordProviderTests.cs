@@ -15,7 +15,7 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
     [TestClass]
     public class UsernamePasswordProviderTests
     {
-        private TokenCache tokenCache;
+        private MockTokenCacheProvider tokenCacheStorage;
         private UsernamePasswordProvider intergratedWindowsAuthFlowProvider;
         private IPublicClientApplication publicClientAppMock;
         private string clientId = "client-id";
@@ -30,8 +30,8 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             securePassword = GetSecureString("veryGoodPassword");
-            tokenCache = new TokenCache();
-            intergratedWindowsAuthFlowProvider = new UsernamePasswordProvider(clientId, organizationsAuthority, tokenCache, scopes, mockUserAccount.Username, securePassword);
+            tokenCacheStorage = new MockTokenCacheProvider();
+            intergratedWindowsAuthFlowProvider = new UsernamePasswordProvider(clientId, tokenCacheStorage, scopes, mockUserAccount.Username, securePassword);
         }
 
         [TestMethod]
@@ -40,16 +40,33 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(intergratedWindowsAuthFlowProvider.ClientApplication);
             Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(intergratedWindowsAuthFlowProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(intergratedWindowsAuthFlowProvider.ClientApplication.Authority, "https://login.microsoftonline.com/organizations/");
         }
 
         [TestMethod]
         public void UsernamePasswordProvider_ConstructorWithoutNullableParams()
         {
-            var authProvider = new UsernamePasswordProvider(clientId, organizationsAuthority, scopes, mockUserAccount.Username, securePassword);
+            var authProvider = new UsernamePasswordProvider(clientId, scopes, mockUserAccount.Username, securePassword, NationalCloud.UsGovernment, "contoso");
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(authProvider.ClientApplication);
             Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.us/contoso/");
+        }
+
+        [TestMethod]
+        public void UsernamePasswordProvider_ConstructorWithPublicClientApplication()
+        {
+            var publicClient = new PublicClientApplication(clientId);
+            var authProvider = new UsernamePasswordProvider(publicClient, scopes, mockUserAccount.Username, securePassword);
+
+            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(authProvider.ClientApplication);
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
         }
 
         [TestMethod]

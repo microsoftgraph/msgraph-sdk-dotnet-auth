@@ -4,9 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Microsoft.Graph.Auth.Test.ConfidentialClient
@@ -14,13 +12,11 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
     [TestClass]
     public class ClientCredentialProviderTests
     {
-        private TokenCache tokenCache;
+        private MockTokenCacheProvider tokenCacheProvider;
         private UserAssertion userAssertion;
         private ClientCredentialProvider clientCredentialFlowProvider;
         private IConfidentialClientApplication confidentialClientAppMock;
         private const string clientId = "client-id";
-        private const string commonAuthority = "https://login.microsoftonline.com/common/";
-        private const string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
         private const string resourceUrl = "https://graph.microsoft.com";
         private string[] scopes = new string[] { "User.Read" };
         private MockUserAccount mockUserAccount, mockUserAccount2;
@@ -33,34 +29,49 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
             mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             confidentialClientAppMock = Substitute.For<IConfidentialClientApplication>();
-            tokenCache = new TokenCache();
+            tokenCacheProvider = new MockTokenCacheProvider();
             var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             userAssertion = new UserAssertion(mockAuthResult.AccessToken);
-            clientCredentialFlowProvider = new ClientCredentialProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCache, resourceUrl);
+
+            clientCredentialFlowProvider = new ClientCredentialProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider);
         }
 
         [TestMethod]
-        public void ClientCredentialProvider_ConstructorWithoutAuthority()
+        public void ClientCredentialProvider_ConstructorWithNullNationalCloudAndTenant()
         {
             Assert.IsInstanceOfType(clientCredentialFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(clientCredentialFlowProvider.ClientApplication);
             Assert.IsInstanceOfType(clientCredentialFlowProvider.ClientApplication, typeof(IConfidentialClientApplication));
             Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.ClientId, clientId);
             Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.RedirectUri, redirectUri);
-            Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.Authority, commonAuthority);
+            Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
         }
 
         [TestMethod]
-        public void ClientCredentialProvider_ConstructorWithAuthority()
+        public void ClientCredentialProvider_ConstructorWithNationalCloudAndTenant()
         {
-            var authProvider = new ClientCredentialProvider(clientId, organizationsAuthority ,redirectUri, new ClientCredential(appSecret), tokenCache, resourceUrl, true);
+            var authProvider = new ClientCredentialProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider, NationalCloud.Germany, "organizations");
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(authProvider.ClientApplication);
             Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication));
             Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
             Assert.AreEqual(authProvider.ClientApplication.RedirectUri, redirectUri);
-            Assert.AreEqual(authProvider.ClientApplication.Authority, organizationsAuthority);
+            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.de/organizations/");
+        }
+
+        [TestMethod]
+        public void ClientCredentialProvider_ConstructorWithConfidentialClientApplication()
+        {
+            var confidentialClient = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider.GetTokenCacheInstance(), null);
+            var authProvider = new ClientCredentialProvider(confidentialClient);
+
+            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(authProvider.ClientApplication);
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication));
+            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(authProvider.ClientApplication.RedirectUri, redirectUri);
+            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
         }
 
         [TestMethod]

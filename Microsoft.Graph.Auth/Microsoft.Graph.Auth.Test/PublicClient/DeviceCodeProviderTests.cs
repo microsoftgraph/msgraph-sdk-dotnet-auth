@@ -17,8 +17,6 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         private DeviceCodeProvider deviceCodeFlowProvider;
         private IPublicClientApplication publicClientAppMock;
         private const string clientId = "client-id";
-        private const string commonAuthority = "https://login.microsoftonline.com/common/";
-        private const string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
         private string[] scopes = new string[] { "User.Read" };
         private MockUserAccount mockUserAccount, mockUserAccount2;
 
@@ -29,25 +27,42 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             publicClientAppMock = Substitute.For<IPublicClientApplication>();
             tokenCache = new TokenCache();
-            deviceCodeFlowProvider = new DeviceCodeProvider(clientId, organizationsAuthority, scopes, DeviceCodeCallback);
+            deviceCodeFlowProvider = new DeviceCodeProvider(clientId, scopes, DeviceCodeCallback);
         }
 
         [TestMethod]
-        public void DeviceCodeProvider_ConstructorWithNullableParams()
+        public void DeviceCodeProvider_ConstructorWithNullNationalCloudAndTenant()
         {
             Assert.IsInstanceOfType(deviceCodeFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(deviceCodeFlowProvider.ClientApplication);
             Assert.IsInstanceOfType(deviceCodeFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(deviceCodeFlowProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(deviceCodeFlowProvider.ClientApplication.Authority, "https://login.microsoftonline.com/organizations/");
         }
 
         [TestMethod]
-        public void DeviceCodeProvider_ConstructorWithoutNullableParams()
+        public void DeviceCodeProvider_ConstructorWithNationalCloudAndNullTenant()
         {
-            var authProvider = new DeviceCodeProvider(clientId, organizationsAuthority, scopes, DeviceCodeCallback, "extra", new CancellationToken());
+            var authProvider = new DeviceCodeProvider(clientId, scopes, DeviceCodeCallback, NationalCloud.Germany);
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(authProvider.ClientApplication);
             Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.de/organizations/");
+        }
+
+        [TestMethod]
+        public void DeviceCodeProvider_ConstructorWithPublicClientApplication()
+        {
+            var publicClient = new PublicClientApplication(clientId);
+            var authProvider = new DeviceCodeProvider(publicClient, scopes, DeviceCodeCallback);
+
+            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(authProvider.ClientApplication);
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(deviceCodeFlowProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(deviceCodeFlowProvider.ClientApplication.Authority, "https://login.microsoftonline.com/organizations/");
         }
 
         [TestMethod]

@@ -12,12 +12,10 @@
     [TestClass]
     public class AuthorizationCodeProviderTests
     {
-        private MockTokenCacheStorage tokenCacheStorage = new MockTokenCacheStorage();
+        private MockTokenCacheProvider tokenCacheProvider = new MockTokenCacheProvider();
         private AuthorizationCodeProvider authCodeFlowProvider;
         private IConfidentialClientApplication confidentialClientAppMock;
         private const string clientId = "client_id";
-        private const string commonAuthority = "https://login.microsoftonline.com/common/";
-        private const string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
         private string[] scopes = new string[] { "User.Read" };
         private MockUserAccount mockUserAccount, mockUserAccount2;
         private const string redirectUri = "redirectUri";
@@ -29,29 +27,41 @@
             mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
             mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
             confidentialClientAppMock = Substitute.For<IConfidentialClientApplication>();
-            authCodeFlowProvider = new AuthorizationCodeProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheStorage, scopes);
+            authCodeFlowProvider = new AuthorizationCodeProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider, scopes);
         }
 
         [TestMethod]
-        public void AuthorizationCodeProvider_ConstructorWithoutAuthority()
+        public void AuthorizationCodeProvider_ConstructorWithNullNationalCloudAndTenant()
         {
             Assert.IsInstanceOfType(authCodeFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNull(authCodeFlowProvider.ClientApplication);
             Assert.AreEqual(authCodeFlowProvider.ClientId, clientId);
             Assert.AreEqual(authCodeFlowProvider.RedirectUri, redirectUri);
-            Assert.IsInstanceOfType(authCodeFlowProvider.UserTokenCache, typeof(ITokenCacheStorage));
         }
 
         [TestMethod]
-        public void AuthorizationCodeProvider_ConstructorWithAuthority()
+        public void AuthorizationCodeProvider_ConstructorWithNationalCloudAndTenant()
         {
-            var authProvider = new AuthorizationCodeProvider(clientId, commonAuthority, redirectUri, new ClientCredential(appSecret), tokenCacheStorage, scopes);
+            var authProvider = new AuthorizationCodeProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider, scopes, NationalCloud.China, "contoso.com");
 
             Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
             Assert.IsNull(authProvider.ClientApplication);
             Assert.AreEqual(authCodeFlowProvider.ClientId, clientId);
             Assert.AreEqual(authCodeFlowProvider.RedirectUri, redirectUri);
-            Assert.IsInstanceOfType(authCodeFlowProvider.UserTokenCache, typeof(ITokenCacheStorage));
+        }
+
+        [TestMethod]
+        public void AuthorizationCodeProvider_ConstructorWithConfidentialClientApplication()
+        {
+            var confidentialClient = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider.GetTokenCacheInstance(), null);
+            var authProvider = new AuthorizationCodeProvider(confidentialClient, scopes);
+
+            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(authProvider.ClientApplication);
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication));
+            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(authProvider.ClientApplication.RedirectUri, redirectUri);
+            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
         }
 
         [TestMethod]
@@ -71,7 +81,7 @@
             }
             catch (Exception ex)
             {
-                Assert.IsInstanceOfType(ex, typeof(MsalUiRequiredException));
+                Assert.IsInstanceOfType(ex, typeof(MsalServiceException));
                 Assert.AreEqual(ex.Message, MsalAuthErrorConstants.Message.AuthenticationChallengeRequired);
             }
 

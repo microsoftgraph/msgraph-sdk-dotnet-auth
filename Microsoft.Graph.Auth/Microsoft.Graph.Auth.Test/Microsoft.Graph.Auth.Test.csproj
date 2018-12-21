@@ -87,9 +87,8 @@
     <Compile Include="ConfidentialClient\AuthorizationCodeProviderTests.cs" />
     <Compile Include="ConfidentialClient\OnBehalfOfProviderTests.cs" />
     <Compile Include="ConfidentialClient\ClientCredentialProviderTests.cs" />
-    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Mocks\MockAuthResult.cs" />
-    <Compile Include="Mocks\MockTokenCacheStorage.cs" />
+    <Compile Include="Mocks\MockTokenCacheProvider.cs" />
     <Compile Include="Mocks\MockUserAccount.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PublicClient\DeviceCodeProviderTests.cs" />
