@@ -257,19 +257,41 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
-
-            if (authenticationResult == null)
+            try
             {
-                IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
+                AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
 
-                if (InteractiveFlowType == InteractiveFlowType.LoginHint)
-                    authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, LoginHint, UIBehavior, null, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
-                else if (InteractiveFlowType == InteractiveFlowType.Account)
-                    authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, Account, UIBehavior, null, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+                if (authenticationResult == null)
+                {
+                    authenticationResult = await GetNewAccessTokenAsync();
+                }
+
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
             }
+            catch (MsalServiceException serviceException)
+            {
+                // Conditional access enabled
+                if(serviceException.Claims != null)
+                {
+                    string extraQueryParameters = $"claims={serviceException.Claims}";
+                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(extraQueryParameters);
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                    httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                }
+            }
+        }
+
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(string extraQueryParameters = null)
+        {
+            IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
+            AuthenticationResult authenticationResult = null;
+
+            if (InteractiveFlowType == InteractiveFlowType.LoginHint)
+                authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, LoginHint, UIBehavior, extraQueryParameters, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+            else if (InteractiveFlowType == InteractiveFlowType.Account)
+                authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, Account, UIBehavior, extraQueryParameters, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+
+            return authenticationResult;
         }
     }
 }

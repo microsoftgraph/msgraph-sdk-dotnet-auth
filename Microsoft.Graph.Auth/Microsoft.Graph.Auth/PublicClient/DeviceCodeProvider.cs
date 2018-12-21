@@ -106,18 +106,35 @@ namespace Microsoft.Graph.Auth
         {
             //TODO: Get CancellationToken via RequestContext
 
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
-
-            if (authenticationResult == null)
+            try
             {
-                authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenWithDeviceCodeAsync(
-                    Scopes,
-                    string.Empty,
-                    DeviceCodeResultCallback,
-                    CancellationToken);
-            }
+                AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                if (authenticationResult == null)
+                {
+                    authenticationResult = await GetNewAccessTokenAsync();
+                }
+
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            }
+            catch (MsalServiceException serviceException)
+            {
+                if(serviceException.Claims != null)
+                {
+                    string extraQueryParameters = $"claims={serviceException.Claims}";
+                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(extraQueryParameters);
+                    httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                }
+            }
+        }
+
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(string extraQueryParameter = null)
+        {
+            return await (ClientApplication as IPublicClientApplication).AcquireTokenWithDeviceCodeAsync(
+                        Scopes,
+                        extraQueryParameter,
+                        DeviceCodeResultCallback,
+                        CancellationToken);
         }
     }
 }
