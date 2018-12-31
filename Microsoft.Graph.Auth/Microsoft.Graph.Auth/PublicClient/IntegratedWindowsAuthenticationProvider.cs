@@ -8,6 +8,7 @@ namespace Microsoft.Graph.Auth
     using Microsoft.Identity.Client;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System;
 
 #if NET45 || NET_CORE
     // Works for tenanted & work & school accounts
@@ -181,15 +182,45 @@ namespace Microsoft.Graph.Auth
 
             if (authenticationResult == null)
             {
-                IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
-
-                if (Username != null)
-                    authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes, Username);
-                else
-                    authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes);
+                authenticationResult = await GetNewAccessTokenAsync();
             }
 
             httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+        }
+
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        {
+            AuthenticationResult authenticationResult = null;
+            IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
+            int retryCount = 0;
+            do
+            {
+                try
+                {
+                    if (Username != null)
+                        authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes, Username);
+                    else
+                        authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes);
+                    break;
+                }
+                catch (MsalServiceException serviceException)
+                {
+                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    {
+                        TimeSpan delay = GetRetryAfter(serviceException);
+                        retryCount++;
+                        // pause execution
+                        await Task.Delay(delay);
+                    }
+                    else
+                    {
+                        throw serviceException;
+                    }
+                }
+
+            } while (retryCount < MaxRetry);
+
+            return authenticationResult;
         }
     }
 #endif

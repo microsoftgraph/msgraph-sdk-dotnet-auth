@@ -8,12 +8,14 @@ namespace Microsoft.Graph.Auth
     {
         internal static class Codes
         {
-            internal static string AuthenticationChallengeRequired = "AuthenticationChallengeRequired";
+            internal const string AuthenticationChallengeRequired = "AuthenticationChallengeRequired";
+            internal const string TemporarilyUnavailable = "temporarily_unavailable";
         }
 
         internal static class Message
         {
-            internal static string AuthenticationChallengeRequired = "Authentication Challange is required";
+            internal const string AuthenticationChallengeRequired = "Authentication Challange is required";
+            internal const string MissingRetryAfterHeader = "Missing retry after header";
         }
     }
 }

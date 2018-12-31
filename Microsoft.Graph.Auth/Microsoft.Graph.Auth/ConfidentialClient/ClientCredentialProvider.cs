@@ -5,6 +5,7 @@
 namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
+    using System;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -67,18 +68,43 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get forceRefresh via RequestContext
+            int retryCount = 0;
+            do
+            {
+                try
+                {
+                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(httpRequestMessage);
+                    httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                    break;
+                }
+                catch (MsalServiceException serviceException)
+                {
+                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    {
+                        TimeSpan delay = GetRetryAfter(serviceException);
+                        retryCount++;
+                        // pause execution
+                        await Task.Delay(delay);
+                    }
+                    else
+                    {
+                        throw serviceException;
+                    }
+                }
+            } while (retryCount < MaxRetry);
+        }
 
-            // AcquireTokenForClientAsync will check for an access token in the cache, no need to call AcquireTokenSilentAsync 
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(HttpRequestMessage httpRequestMessage)
+        {
             AuthenticationResult authenticationResult = null;
             IConfidentialClientApplication confidentialClientApplication = (IConfidentialClientApplication)ClientApplication;
-
+            //TODO: Get forceRefresh via RequestContext
             if (ForceRefresh)
                 authenticationResult = await confidentialClientApplication.AcquireTokenForClientAsync(new string[] { ResourceUrl }, ForceRefresh);
             else
                 authenticationResult = await confidentialClientApplication.AcquireTokenForClientAsync(new string[] { ResourceUrl });
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            return authenticationResult;
         }
     }
 }

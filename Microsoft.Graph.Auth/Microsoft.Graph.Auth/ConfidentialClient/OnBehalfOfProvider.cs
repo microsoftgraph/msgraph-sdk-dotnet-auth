@@ -4,6 +4,7 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using System;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -80,10 +81,41 @@ namespace Microsoft.Graph.Auth
             AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
             if (authenticationResult == null)
             {
-                authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, UserAssertion, ClientApplication.Authority);
+                authenticationResult = await GetNewAccessTokenAsync();
             }
 
             httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+        }
+
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        {
+            AuthenticationResult authenticationResult = null;
+            int retryCount = 0;
+            do
+            {
+                try
+                {
+                    authenticationResult = await(ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, UserAssertion, ClientApplication.Authority);
+                    break;
+                }
+                catch (MsalServiceException serviceException)
+                {
+                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    {
+                        TimeSpan delay = GetRetryAfter(serviceException);
+                        retryCount++;
+                        // pause execution
+                        await Task.Delay(delay);
+                    }
+                    else
+                    {
+                        throw serviceException;
+                    }
+                }
+
+            } while (retryCount < MaxRetry);
+
+            return authenticationResult;
         }
     }
 }

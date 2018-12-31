@@ -31,11 +31,18 @@ namespace Microsoft.Graph.Auth
         /// A ClientId property
         /// </summary>
         internal string ClientId { get; }
-        
+
+        /// <summary>
+        /// A MaxRetry property
+        /// </summary>
+        internal int MaxRetry { get; set; } = 1;
+
         /// <summary>
         /// Constructs a new <see cref="MsalAuthenticationBase"/>
         /// </summary>
         /// <param name="scopes">Scopes requested to access a protected API</param>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+
         public MsalAuthenticationBase(string[] scopes, string clientId)
         {
             Scopes = scopes;
@@ -60,6 +67,32 @@ namespace Microsoft.Graph.Auth
                 }
             }
             return authenticationResult;
+        }
+
+        /// <summary>
+        /// Gets <see cref="RetryConditionHeaderValue"/> from <see cref="MsalServiceException"/> and computes when to retry
+        /// </summary>
+        /// <param name="serviceException">A <see cref="MsalServiceException"/> with RetryAfter header</param>
+        /// <returns></returns>
+
+        internal TimeSpan GetRetryAfter(MsalServiceException serviceException)
+        {
+            RetryConditionHeaderValue retryAfter = serviceException.Headers.RetryAfter;
+            TimeSpan? delay = null;
+
+            if (retryAfter != null && retryAfter.Delta.HasValue)
+            {
+                delay = retryAfter.Delta;
+            }
+            else if (retryAfter != null && retryAfter.Date.HasValue)
+            {
+                delay = retryAfter.Date.Value.Offset;
+            }
+
+            if (delay == null)
+                throw new MsalServiceException(serviceException.ErrorCode, MsalAuthErrorConstants.Message.MissingRetryAfterHeader);
+
+            return delay.Value;
         }
     }
 }

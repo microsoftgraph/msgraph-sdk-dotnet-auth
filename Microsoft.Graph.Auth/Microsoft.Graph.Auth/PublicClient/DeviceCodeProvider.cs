@@ -105,36 +105,55 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             //TODO: Get CancellationToken via RequestContext
+            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
 
-            try
+            if (authenticationResult == null)
             {
-                AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
-
-                if (authenticationResult == null)
-                {
-                    authenticationResult = await GetNewAccessTokenAsync();
-                }
-
-                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                authenticationResult = await GetNewAccessTokenAsync();
             }
-            catch (MsalServiceException serviceException)
-            {
-                if(serviceException.Claims != null)
-                {
-                    string extraQueryParameters = $"claims={serviceException.Claims}";
-                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(extraQueryParameters);
-                    httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
-                }
-            }
+
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(string extraQueryParameter = null)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
         {
-            return await (ClientApplication as IPublicClientApplication).AcquireTokenWithDeviceCodeAsync(
+            AuthenticationResult authenticationResult = null;
+            int retryCount = 0;
+            string extraQueryParameter = null;
+            do
+            {
+                try
+                {
+                    authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenWithDeviceCodeAsync(
                         Scopes,
                         extraQueryParameter,
                         DeviceCodeResultCallback,
                         CancellationToken);
+                    break;
+                }
+                catch (MsalServiceException serviceException)
+                {
+                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    {
+                        TimeSpan delay = GetRetryAfter(serviceException);
+                        retryCount++;
+                        // pause execution
+                        await Task.Delay(delay);
+                    }
+                    else if (serviceException.Claims != null)
+                    {
+                        extraQueryParameter = $"claims={serviceException.Claims}";
+                        retryCount++;
+                    }
+                    else
+                    {
+                        throw serviceException;
+                    }
+                }
+
+            } while (retryCount < MaxRetry);
+
+            return authenticationResult;
         }
     }
 }

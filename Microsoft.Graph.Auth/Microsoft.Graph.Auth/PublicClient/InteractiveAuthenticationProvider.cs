@@ -4,6 +4,7 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using System;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -257,39 +258,55 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            try
+            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
+
+            if (authenticationResult == null)
             {
-                AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
-
-                if (authenticationResult == null)
-                {
-                    authenticationResult = await GetNewAccessTokenAsync();
-                }
-
-                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+                authenticationResult = await GetNewAccessTokenAsync();
             }
-            catch (MsalServiceException serviceException)
-            {
-                // Conditional access enabled
-                if(serviceException.Claims != null)
-                {
-                    string extraQueryParameters = $"claims={serviceException.Claims}";
-                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(extraQueryParameters);
 
-                    httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
-                }
-            }
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(string extraQueryParameters = null)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
         {
             IPublicClientApplication publicClientApplication = (IPublicClientApplication)ClientApplication;
             AuthenticationResult authenticationResult = null;
+            
+            int retryCount = 0;
+            string extraQueryParameter = null;
+            do
+            {
+                try
+                {
+                    if (InteractiveFlowType == InteractiveFlowType.LoginHint)
+                        authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, LoginHint, UIBehavior, extraQueryParameter, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+                    else if (InteractiveFlowType == InteractiveFlowType.Account)
+                        authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, Account, UIBehavior, extraQueryParameter, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+                    break;
+                }
+                catch (MsalServiceException serviceException)
+                {
+                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    {
+                        TimeSpan delay = GetRetryAfter(serviceException);
+                        retryCount++;
+                        // pause execution
+                        await Task.Delay(delay);
+                    }
+                    else if (serviceException.Claims != null)
+                    {
+                        extraQueryParameter = $"claims={serviceException.Claims}";
+                        retryCount++;
+                    }
+                    else
+                    {
+                        throw serviceException;
+                    }
+                }
 
-            if (InteractiveFlowType == InteractiveFlowType.LoginHint)
-                authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, LoginHint, UIBehavior, extraQueryParameters, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
-            else if (InteractiveFlowType == InteractiveFlowType.Account)
-                authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, Account, UIBehavior, extraQueryParameters, ExtraScopesToConsent, ClientApplication.Authority, UIParent);
+            } while (retryCount < MaxRetry);
+
 
             return authenticationResult;
         }
