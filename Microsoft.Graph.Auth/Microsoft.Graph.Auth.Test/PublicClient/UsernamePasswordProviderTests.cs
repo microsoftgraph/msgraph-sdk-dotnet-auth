@@ -1,72 +1,47 @@
-﻿using Microsoft.Graph.Auth.Test.Mocks;
-using Microsoft.Identity.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSubstitute;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Microsoft.Graph.Auth.Test.PublicClient
+﻿namespace Microsoft.Graph.Auth.Test.PublicClient
 {
+    using Microsoft.Graph.Auth.Test.Mocks;
+    using Microsoft.Identity.Client;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Security;
+    using System.Threading.Tasks;
+
     [TestClass]
     public class UsernamePasswordProviderTests
     {
-        private MockTokenCacheProvider tokenCacheStorage;
-        private UsernamePasswordProvider intergratedWindowsAuthFlowProvider;
-        private IPublicClientApplication publicClientAppMock;
-        private string clientId = "client-id";
+        private SecureString securePassword;
+        private MockPublicClientApplication mockClientApplicationBase;
+        private IEnumerable<MockUserAccount> mockUserAccounts;
+        private AuthenticationResult mockAuthResult;
+        private UsernamePasswordProvider usernamePasswordProvider;
+        private const string clientId = "client-id";
+        private const string redirectUri = "redirectUri";
+        private const string appSecret = "appSecret";
         private string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
         private string[] scopes = new string[] { "User.Read" };
-        private MockUserAccount mockUserAccount, mockUserAccount2;
-        private SecureString securePassword;
 
         [TestInitialize]
         public void Setup()
         {
-            mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
-            mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
-            securePassword = GetSecureString("veryGoodPassword");
-            tokenCacheStorage = new MockTokenCacheProvider();
-            intergratedWindowsAuthFlowProvider = new UsernamePasswordProvider(clientId, tokenCacheStorage, scopes, mockUserAccount.Username, securePassword);
+            mockUserAccounts = new List<MockUserAccount> {
+                new MockUserAccount("xyz@test.net", "login.microsoftonline.com")
+            };
+            mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+            mockClientApplicationBase = new MockPublicClientApplication(scopes, mockUserAccounts, organizationsAuthority, false, clientId, mockAuthResult);
+            usernamePasswordProvider = new UsernamePasswordProvider(mockClientApplicationBase.Object as IPublicClientApplication, scopes, mockUserAccounts.FirstOrDefault().Username, securePassword);
         }
 
         [TestMethod]
-        public void UsernamePasswordProvider_ConstructorWithNullableParams()
+        public void UsernamePasswordProvider_DefaultConstructor()
         {
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(intergratedWindowsAuthFlowProvider.ClientApplication);
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
-            Assert.AreEqual(intergratedWindowsAuthFlowProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(intergratedWindowsAuthFlowProvider.ClientApplication.Authority, "https://login.microsoftonline.com/organizations/");
-        }
-
-        [TestMethod]
-        public void UsernamePasswordProvider_ConstructorWithoutNullableParams()
-        {
-            var authProvider = new UsernamePasswordProvider(clientId, scopes, mockUserAccount.Username, securePassword, NationalCloud.UsGovernment, "contoso");
-
-            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(authProvider.ClientApplication);
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
-            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.us/contoso/");
-        }
-
-        [TestMethod]
-        public void UsernamePasswordProvider_ConstructorWithPublicClientApplication()
-        {
-            var publicClient = new PublicClientApplication(clientId);
-            var authProvider = new UsernamePasswordProvider(publicClient, scopes, mockUserAccount.Username, securePassword);
-
-            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(authProvider.ClientApplication);
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication));
-            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
+            Assert.IsInstanceOfType(usernamePasswordProvider, typeof(IAuthenticationProvider));
+            Assert.IsNotNull(usernamePasswordProvider.ClientApplication);
+            Assert.IsInstanceOfType(usernamePasswordProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.AreEqual(usernamePasswordProvider.ClientApplication.ClientId, clientId);
+            Assert.AreEqual(usernamePasswordProvider.ClientApplication.Authority, "https://login.microsoftonline.com/organizations/");
         }
 
         [TestMethod]
@@ -76,16 +51,17 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
 
-            publicClientAppMock = Substitute.For<IPublicClientApplication>();
-            publicClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount>());
-            publicClientAppMock.AcquireTokenSilentAsync(scopes, mockUserAccount).ReturnsForAnyArgs(mockAuthResult);
-            publicClientAppMock.AcquireTokenByUsernamePasswordAsync(scopes, mockUserAccount.Username, securePassword).ReturnsForAnyArgs(expectedAuthResult);
+            mockClientApplicationBase.Setup(pca => pca.GetAccountsAsync())
+            .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
 
-            intergratedWindowsAuthFlowProvider.ClientApplication = publicClientAppMock;
-            await intergratedWindowsAuthFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
+            mockClientApplicationBase.Setup(pca => pca.AcquireTokenByUsernamePasswordAsync(scopes, mockUserAccounts.FirstOrDefault().Username, securePassword))
+            .Returns(Task.FromResult(expectedAuthResult));
 
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            usernamePasswordProvider.ClientApplication = mockClientApplicationBase.Object;
+            await usernamePasswordProvider.AuthenticateRequestAsync(httpRequestMessage);
+
+            Assert.IsInstanceOfType(usernamePasswordProvider, typeof(IAuthenticationProvider));
+            Assert.IsInstanceOfType(usernamePasswordProvider.ClientApplication, typeof(IPublicClientApplication));
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
@@ -95,22 +71,14 @@ namespace Microsoft.Graph.Auth.Test.PublicClient
         public async Task UsernamePasswordProvider_WithUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "http://example.org/foo");
-            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
 
-            publicClientAppMock = Substitute.For<IPublicClientApplication>();
-            publicClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount> { mockUserAccount });
-            publicClientAppMock.AcquireTokenSilentAsync(scopes, mockUserAccount).ReturnsForAnyArgs(expectedAuthResult);
-            publicClientAppMock.AcquireTokenByUsernamePasswordAsync(scopes, mockUserAccount.Username, securePassword).ReturnsForAnyArgs(mockAuthResult);
+            await usernamePasswordProvider.AuthenticateRequestAsync(httpRequestMessage);
 
-            intergratedWindowsAuthFlowProvider.ClientApplication = publicClientAppMock;
-            await intergratedWindowsAuthFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
-
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(intergratedWindowsAuthFlowProvider.ClientApplication, typeof(IPublicClientApplication));
+            Assert.IsInstanceOfType(usernamePasswordProvider, typeof(IAuthenticationProvider));
+            Assert.IsInstanceOfType(usernamePasswordProvider.ClientApplication, typeof(IPublicClientApplication));
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, mockAuthResult.AccessToken);
         }
 
         private SecureString GetSecureString(string strValue)

@@ -1,9 +1,9 @@
 ﻿using Microsoft.Graph.Auth.Test.Mocks;
 using Microsoft.Identity.Client;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NSubstitute;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -12,66 +12,33 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
     [TestClass]
     public class ClientCredentialProviderTests
     {
-        private MockTokenCacheProvider tokenCacheProvider;
-        private UserAssertion userAssertion;
+        private MockConfidentialClientApplication mockClientApplicationBase;
+        private IEnumerable<MockUserAccount> mockUserAccounts;
+        private AuthenticationResult mockAuthResult;
         private ClientCredentialProvider clientCredentialFlowProvider;
-        private IConfidentialClientApplication confidentialClientAppMock;
         private const string clientId = "client-id";
-        private const string resourceUrl = "https://graph.microsoft.com";
-        private string[] scopes = new string[] { "User.Read" };
-        private MockUserAccount mockUserAccount, mockUserAccount2;
-        private const string redirectUri = "redirectUri";
-        private const string appSecret = "appSecret";
+        private string[] scopes = new string[] { "https://graph.microsoft.com/.default" };
+        private string commonAuthority = "https://login.microsoftonline.com/common/";
 
         [TestInitialize]
         public void Setup()
         {
-            mockUserAccount = new MockUserAccount("xyz@test.net", "login.microsoftonline.com");
-            mockUserAccount2 = new MockUserAccount("abc@test.com", "login.microsoftonline.com");
-            confidentialClientAppMock = Substitute.For<IConfidentialClientApplication>();
-            tokenCacheProvider = new MockTokenCacheProvider();
-            var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            userAssertion = new UserAssertion(mockAuthResult.AccessToken);
-
-            clientCredentialFlowProvider = new ClientCredentialProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider);
+            mockUserAccounts = new List<MockUserAccount> {
+                new MockUserAccount("xyz@test.net", "login.microsoftonline.com")
+            };
+            mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+            mockClientApplicationBase = new MockConfidentialClientApplication(scopes, mockUserAccounts, commonAuthority, false, clientId, mockAuthResult);
+            clientCredentialFlowProvider = new ClientCredentialProvider(mockClientApplicationBase.Object, scopes);
         }
 
         [TestMethod]
-        public void ClientCredentialProvider_ConstructorWithNullNationalCloudAndTenant()
+        public void ClientCredentialProvider_DefaultConstructor()
         {
             Assert.IsInstanceOfType(clientCredentialFlowProvider, typeof(IAuthenticationProvider));
             Assert.IsNotNull(clientCredentialFlowProvider.ClientApplication);
             Assert.IsInstanceOfType(clientCredentialFlowProvider.ClientApplication, typeof(IConfidentialClientApplication));
             Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.RedirectUri, redirectUri);
-            Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
-        }
-
-        [TestMethod]
-        public void ClientCredentialProvider_ConstructorWithNationalCloudAndTenant()
-        {
-            var authProvider = new ClientCredentialProvider(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider, NationalCloud.Germany, "organizations");
-
-            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(authProvider.ClientApplication);
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication));
-            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(authProvider.ClientApplication.RedirectUri, redirectUri);
-            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.de/organizations/");
-        }
-
-        [TestMethod]
-        public void ClientCredentialProvider_ConstructorWithConfidentialClientApplication()
-        {
-            var confidentialClient = new ConfidentialClientApplication(clientId, redirectUri, new ClientCredential(appSecret), tokenCacheProvider.GetTokenCacheInstance(), null);
-            var authProvider = new ClientCredentialProvider(confidentialClient);
-
-            Assert.IsInstanceOfType(authProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(authProvider.ClientApplication);
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication));
-            Assert.AreEqual(authProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(authProvider.ClientApplication.RedirectUri, redirectUri);
-            Assert.AreEqual(authProvider.ClientApplication.Authority, "https://login.microsoftonline.com/common/");
+            Assert.AreEqual(clientCredentialFlowProvider.ClientApplication.Authority, commonAuthority);
         }
 
         [TestMethod]
@@ -81,10 +48,13 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
             var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
 
-            confidentialClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount>());
-            confidentialClientAppMock.AcquireTokenForClientAsync(new string[] { resourceUrl + "/.default"}).ReturnsForAnyArgs(expectedAuthResult);
+            mockClientApplicationBase.Setup(cca => cca.GetAccountsAsync())
+            .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
 
-            clientCredentialFlowProvider.ClientApplication = confidentialClientAppMock;
+            mockClientApplicationBase.Setup(cca => cca.AcquireTokenForClientAsync(scopes, false))
+            .Returns(Task.FromResult(expectedAuthResult));
+
+            clientCredentialFlowProvider.ClientApplication = mockClientApplicationBase.Object;
 
             try
             {
@@ -107,15 +77,11 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
         public async Task ClientCredentialProvider_WithUserAccountInCache()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            var mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
 
-            confidentialClientAppMock.GetAccountsAsync().ReturnsForAnyArgs(new List<IAccount> { mockUserAccount });
-            confidentialClientAppMock.AcquireTokenSilentAsync(scopes, null).ReturnsForAnyArgs(mockAuthResult);
-            confidentialClientAppMock.AcquireTokenForClientAsync(new string[] { resourceUrl + "/.default" }).ReturnsForAnyArgs(expectedAuthResult);
-            confidentialClientAppMock.AcquireTokenForClientAsync(new string[] { resourceUrl + "/.default" }, false).ReturnsForAnyArgs(mockAuthResult);
+            mockClientApplicationBase.Setup(cca => cca.AcquireTokenForClientAsync(scopes, false))
+            .Returns(Task.FromResult(mockAuthResult));
 
-            clientCredentialFlowProvider.ClientApplication = confidentialClientAppMock;
+            clientCredentialFlowProvider.ClientApplication = mockClientApplicationBase.Object;
 
             await clientCredentialFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
 
@@ -123,7 +89,7 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
             Assert.IsInstanceOfType(clientCredentialFlowProvider.ClientApplication, typeof(IConfidentialClientApplication));
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, mockAuthResult.AccessToken);
         }
     }
 }

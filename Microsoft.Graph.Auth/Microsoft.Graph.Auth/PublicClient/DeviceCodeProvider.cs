@@ -17,7 +17,6 @@ namespace Microsoft.Graph.Auth
     public class DeviceCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         private Func<DeviceCodeResult, Task> DeviceCodeResultCallback;
-        private CancellationToken CancellationToken = CancellationToken.None;
 
         /// <summary>
         /// Constructs a new <see cref="DeviceCodeProvider"/>
@@ -26,74 +25,12 @@ namespace Microsoft.Graph.Auth
         /// <param name="scopes">Scopes required to access a protected API</param>
         /// <param name="deviceCodeResultCallback">Callback containing information to show the user about how to authenticate and enter the device code.</param>
         public DeviceCodeProvider(
-            PublicClientApplication publicClientApplication,
+            IPublicClientApplication publicClientApplication,
             string[] scopes,
             Func<DeviceCodeResult, Task> deviceCodeResultCallback)
-            : base(scopes, publicClientApplication.ClientId)
+            : base(scopes)
         {
             ClientApplication = publicClientApplication;
-            DeviceCodeResultCallback = deviceCodeResultCallback;
-        }
-
-        /// <summary>
-        /// Constructs a new <see cref="DeviceCodeProvider"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
-        /// <param name="scopes">Scopes required to access a protected API</param>
-        /// <param name="deviceCodeResultCallback">Callback containing information to show the user about how to authenticate and enter the device code.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
-        /// <param name="tenant">Tenant to sign-in users.
-        /// Usual tenants are :
-        /// <list type="bullet">
-        /// <item><description>Tenant ID of the Azure AD tenant or a domain associated with Azure AD tenant, to sign-in users of a specific organization only;</description></item>
-        /// <item><description><c>common</c>, to sign-in users with any work and school accounts or Microsoft personal accounts;</description></item>
-        /// <item><description><c>organizations</c>, to sign-in users with any work and school accounts;</description></item>
-        /// <item><description><c>consumers</c>, to sign-in users with only personal Microsoft accounts(live);</description></item>
-        /// </list>
-        /// This defaults to <c>common</c>
-        /// </param>
-        public DeviceCodeProvider(
-            string clientId,
-            string[] scopes,
-            Func<DeviceCodeResult, Task> deviceCodeResultCallback,
-            NationalCloud nationalCloud = NationalCloud.Global,
-            string tenant = null)
-            : base(scopes, clientId)
-        {
-            string authority = this.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
-            ClientApplication = new PublicClientApplication(clientId, authority);
-            DeviceCodeResultCallback = deviceCodeResultCallback;
-        }
-
-        /// <summary>
-        /// Constructs a new <see cref="DeviceCodeProvider"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
-        /// <param name="userTokenCacheProvider">A <see cref="ITokenCacheProvider"/> for storing access tokens.</param>
-        /// <param name="scopes">Scopes required to access a protected API</param>
-        /// <param name="deviceCodeResultCallback">Callback containing information to show the user about how to authenticate and enter the device code.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
-        /// <param name="tenant">Tenant to sign-in users.
-        /// Usual tenants are :
-        /// <list type="bullet">
-        /// <item><description>Tenant ID of the Azure AD tenant or a domain associated with Azure AD tenant, to sign-in users of a specific organization only;</description></item>
-        /// <item><description><c>common</c>, to sign-in users with any work and school accounts or Microsoft personal accounts;</description></item>
-        /// <item><description><c>organizations</c>, to sign-in users with any work and school accounts;</description></item>
-        /// <item><description><c>consumers</c>, to sign-in users with only personal Microsoft accounts(live);</description></item>
-        /// </list>
-        /// This defaults to <c>common</c>
-        /// </param>
-        public DeviceCodeProvider(
-            string clientId,
-            ITokenCacheProvider userTokenCacheProvider,
-            string[] scopes,
-            Func<DeviceCodeResult, Task> deviceCodeResultCallback,
-            NationalCloud nationalCloud = NationalCloud.Global,
-            string tenant = null)
-            : base(scopes, clientId)
-        {
-            string authority = this.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
-            ClientApplication = new PublicClientApplication(clientId, authority, userTokenCacheProvider.GetTokenCacheInstance());
             DeviceCodeResultCallback = deviceCodeResultCallback;
         }
 
@@ -104,18 +41,22 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get CancellationToken via RequestContext
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync();
+            //TODO: Get CancellationToken via parameter
+            //TODO: Get ForceRefresh via RequestContext
+            //TODO: Get Scopes via RequestContext
+            CancellationToken cancellationToken = CancellationToken.None;
+            bool forceRefresh = false;
+            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync();
+                authenticationResult = await GetNewAccessTokenAsync(cancellationToken);
             }
 
             httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -128,14 +69,14 @@ namespace Microsoft.Graph.Auth
                         Scopes,
                         extraQueryParameter,
                         DeviceCodeResultCallback,
-                        CancellationToken);
+                        cancellationToken);
                     break;
                 }
                 catch (MsalServiceException serviceException)
                 {
                     if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
                     {
-                        TimeSpan delay = GetRetryAfter(serviceException);
+                        TimeSpan delay = this.GetRetryAfter(serviceException);
                         retryCount++;
                         // pause execution
                         await Task.Delay(delay);
