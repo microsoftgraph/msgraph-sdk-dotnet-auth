@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
-    public enum NationalCloud
-    {
-        Global,
-        China,
-        Germany,
-        UsGovernment
-    }
+    using System.Collections.Generic;
     internal static class AuthConstants
     {
         internal static class Tenants

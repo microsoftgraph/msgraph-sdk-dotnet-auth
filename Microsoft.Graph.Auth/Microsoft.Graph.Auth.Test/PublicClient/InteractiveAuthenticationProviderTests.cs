@@ -29,7 +29,7 @@
             };
             mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             mockClientApplicationBase = new MockPublicClientApplication(scopes, mockUserAccounts, commonAuthority, false, clientId, mockAuthResult);
-            interactiveAuthProvider = new InteractiveAuthenticationProvider(mockClientApplicationBase.Object, scopes, string.Empty);
+            interactiveAuthProvider = new InteractiveAuthenticationProvider(mockClientApplicationBase.Object, scopes);
         }
 
         [TestMethod]
@@ -63,8 +63,8 @@
 
             mockClientApplicationBase.Setup(pca => pca.GetAccountsAsync())
                 .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
-
-            mockClientApplicationBase.Setup(pca => pca.AcquireTokenAsync(scopes, string.Empty, UIBehavior.SelectAccount, null, null, commonAuthority, null))
+            var accounts = await mockClientApplicationBase.Object.GetAccountsAsync();
+            mockClientApplicationBase.Setup(pca => pca.AcquireTokenAsync(scopes, accounts.FirstOrDefault(), UIBehavior.SelectAccount, null, null, commonAuthority, null))
                 .Returns(Task.FromResult(expectedAuthResult));
 
             interactiveAuthProvider.ClientApplication = mockClientApplicationBase.Object;

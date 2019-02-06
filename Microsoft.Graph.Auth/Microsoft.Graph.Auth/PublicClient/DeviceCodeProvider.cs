@@ -9,6 +9,7 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
     // Only works for tenanted or work & school accounts
     /// <summary>
@@ -16,7 +17,10 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class DeviceCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private Func<DeviceCodeResult, Task> DeviceCodeResultCallback;
+        /// <summary>
+        /// DeviceCodeResultCallback property
+        /// </summary>
+        public Func<DeviceCodeResult, Task> DeviceCodeResultCallback { get; set; }
 
         /// <summary>
         /// Constructs a new <see cref="DeviceCodeProvider"/>
@@ -35,15 +39,33 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
+        /// Creates a new <see cref="PublicClientApplication"/>
+        /// </summary>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>organizations</c> if non is specified.</param>
+        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <returns>A <see cref="PublicClientApplication"/></returns>
+        public static PublicClientApplication CreateClientApplication(string clientId,
+            ITokenStorageProvider tokenStorageProvider = null,
+            string tenant = null,
+            NationalCloud nationalCloud = NationalCloud.Global)
+        {
+            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
+            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
+            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
+        }
+
+        /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token. If a token is not found or expired, it gets a new one.
         /// </summary>
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get CancellationToken via parameter
-            //TODO: Get ForceRefresh via RequestContext
-            //TODO: Get Scopes via RequestContext
+            //TODO: Get CancellationToken via RequestContext
+            //TODO: Get ForceRefresh via AuthProviderOption
+            //TODO: Get Scopes via AuthProviderOption
             CancellationToken cancellationToken = CancellationToken.None;
             bool forceRefresh = false;
             AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);

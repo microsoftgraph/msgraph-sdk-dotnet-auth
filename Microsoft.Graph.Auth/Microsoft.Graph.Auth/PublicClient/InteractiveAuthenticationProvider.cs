@@ -5,15 +5,12 @@
 namespace Microsoft.Graph.Auth
 {
     using System;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
+    using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
-    internal enum InteractiveFlowType
-    {
-        LoginHint,
-        Account
-    }
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token interactively
@@ -29,35 +26,7 @@ namespace Microsoft.Graph.Auth
         /// A UIParent property
         /// </summary>
         public UIParent UIParent { get; set; }
-        private InteractiveFlowType InteractiveFlowType;
-        private IAccount Account;
-        private string LoginHint;
 
-        // LoginHint
-        /// <summary>
-        /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
-        /// </summary>
-        /// <param name="publicClientApplication">A <see cref="PublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication</param>
-        /// <param name="scopes">Scopes required to access a protected API</param>
-        /// <param name="loginHint">Identifier of the user. Generally in UserPrincipalName (UPN) format, e.g. <c>john.doe@contoso.com</c></param>
-        /// <param name="uiBehavior">Designed interactive experience for the user. Defaults to <see cref="UIBehavior.SelectAccount"/></param>
-        /// <param name="uiParent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
-        public InteractiveAuthenticationProvider(
-            IPublicClientApplication publicClientApplication,
-            string[] scopes,
-            string loginHint = null,
-            UIBehavior? uiBehavior = null,
-            UIParent uiParent = null)
-            : base(scopes)
-        {
-            ClientApplication = publicClientApplication;
-            InteractiveFlowType = InteractiveFlowType.LoginHint;
-            UIBehavior = uiBehavior ?? UIBehavior.SelectAccount;
-            LoginHint = loginHint;
-            UIParent = uiParent;
-        }
-
-        // User
         /// <summary>
         /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
@@ -69,16 +38,31 @@ namespace Microsoft.Graph.Auth
         public InteractiveAuthenticationProvider(
             IPublicClientApplication publicClientApplication,
             string[] scopes,
-            IAccount account,
             UIBehavior? uiBehavior = null,
             UIParent uiParent = null)
             : base(scopes)
         {
             ClientApplication = publicClientApplication;
-            InteractiveFlowType = InteractiveFlowType.Account;
-            Account = account;
             UIBehavior = uiBehavior ?? UIBehavior.SelectAccount;
             UIParent = uiParent;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="PublicClientApplication"/>
+        /// </summary>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified. </param>
+        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <returns>A <see cref="PublicClientApplication"/></returns>
+        public static PublicClientApplication CreateClientApplication(string clientId,
+            ITokenStorageProvider tokenStorageProvider = null,
+            string tenant = null,
+            NationalCloud nationalCloud = NationalCloud.Global)
+        {
+            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
+            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
+            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
         }
 
         /// <summary>
@@ -112,10 +96,8 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    if (InteractiveFlowType == InteractiveFlowType.LoginHint)
-                        authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, LoginHint, UIBehavior, extraQueryParameter, null, ClientApplication.Authority, UIParent);
-                    else if (InteractiveFlowType == InteractiveFlowType.Account)
-                        authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, Account, UIBehavior, extraQueryParameter, null, ClientApplication.Authority, UIParent);
+                    var accounts = await publicClientApplication.GetAccountsAsync();
+                    authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, accounts.FirstOrDefault(), UIBehavior, extraQueryParameter, null, ClientApplication.Authority, UIParent);
                     break;
                 }
                 catch (MsalServiceException serviceException)

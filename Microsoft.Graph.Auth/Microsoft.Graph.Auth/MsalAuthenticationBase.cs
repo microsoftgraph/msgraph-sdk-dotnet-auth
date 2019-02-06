@@ -54,7 +54,7 @@ namespace Microsoft.Graph.Auth
                 {
                     authenticationResult = await ClientApplication.AcquireTokenSilentAsync(scopes, accounts.FirstOrDefault(), ClientApplication.Authority, forceRefresh);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                 }
             }

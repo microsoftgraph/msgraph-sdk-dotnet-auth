@@ -10,6 +10,7 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http.Headers;
     using System;
     using System.Threading;
+    using Microsoft.Graph.Auth.Helpers;
 
 #if NET45 || NET_CORE
     // Works for tenanted & work & school accounts
@@ -19,7 +20,7 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class IntegratedWindowsAuthenticationProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private string Username;
+        private string _username;
 
         /// <summary>
         /// Constructs a new <see cref="IntegratedWindowsAuthenticationProvider"/>
@@ -49,9 +50,29 @@ namespace Microsoft.Graph.Auth
            : base(scopes)
         {
             ClientApplication = publicClientApplication;
-            Username = username;
+            //TODO: Move to AuthProviderOption
+            _username = username;
         }
 #endif
+
+        /// <summary>
+        /// Creates a new <see cref="PublicClientApplication"/>
+        /// </summary>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>organizations</c> if non is specified. </param>
+        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <returns>A <see cref="PublicClientApplication"/></returns>
+        public static PublicClientApplication CreateClientApplication(string clientId,
+            ITokenStorageProvider tokenStorageProvider = null,
+            string tenant = null,
+            NationalCloud nationalCloud = NationalCloud.Global)
+        {
+            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
+            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
+            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
+        }
+
         /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token. If a token is not found or expired, it gets a new one.
@@ -60,7 +81,8 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             //TODO: Get ForceRefresh via RequestContext
-            //TODO: Get Scopes via RequestContext
+            //TODO: Get Scopes via AuthProviderOption
+            //TODO: Get Username via AuthProviderOption
             bool forceRefresh = false;
             AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
 
@@ -81,8 +103,8 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    if (Username != null)
-                        authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes, Username);
+                    if (_username != null)
+                        authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes, _username);
                     else
                         authenticationResult = await publicClientApplication.AcquireTokenByIntegratedWindowsAuthAsync(Scopes);
                     break;

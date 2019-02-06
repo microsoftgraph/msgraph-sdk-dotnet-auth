@@ -9,6 +9,7 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http.Headers;
     using System.Security;
     using System.Threading.Tasks;
+    using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
 #if NET45 || NET_CORE
     // Works for work & school accounts
@@ -18,8 +19,8 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class UsernamePasswordProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private string Username;
-        private SecureString SecurePassword;
+        private string _username;
+        private SecureString _password;
 
         /// <summary>
         /// Constructs a new <see cref="UsernamePasswordProvider"/>
@@ -33,12 +34,31 @@ namespace Microsoft.Graph.Auth
             IPublicClientApplication publicClientApplication,
             string[] scopes,
             string username,
-            SecureString securePassword)
+            SecureString password)
             : base(scopes)
         {
             ClientApplication = publicClientApplication;
-            Username = username;
-            SecurePassword = securePassword;
+            // TODO: Move to AuthProviderOption.
+            _username = username;
+            _password = password;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="PublicClientApplication"/>
+        /// </summary>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>organizations</c> if non is specified. </param>
+        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <returns>A <see cref="PublicClientApplication"/></returns>
+        public static PublicClientApplication CreateClientApplication(string clientId,
+            ITokenStorageProvider tokenStorageProvider = null,
+            string tenant = null,
+            NationalCloud nationalCloud = NationalCloud.Global)
+        {
+            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
+            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
+            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
         }
 
         /// <summary>
@@ -69,7 +89,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenByUsernamePasswordAsync(Scopes, Username, SecurePassword);
+                    authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenByUsernamePasswordAsync(Scopes, _username, _password);
                     break;
                 }
                 catch (MsalServiceException serviceException)

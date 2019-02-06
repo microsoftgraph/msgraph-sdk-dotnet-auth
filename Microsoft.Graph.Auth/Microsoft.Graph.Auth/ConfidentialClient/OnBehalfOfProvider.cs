@@ -8,6 +8,7 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
+    using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
 
     /// <summary>
@@ -15,7 +16,7 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class OnBehalfOfProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private UserAssertion UserAssertion;
+        private UserAssertion _userAssertion;
         /// <summary>
         /// Constructs a new <see cref="OnBehalfOfProvider"/>
         /// </summary>
@@ -30,7 +31,31 @@ namespace Microsoft.Graph.Auth
             : base(scopes)
         {
             ClientApplication = confidentialClientApplication;
-            UserAssertion = userAssertion;
+            // TODO: Move UserAssertion to AuthProviderOption - get it per request
+            _userAssertion = userAssertion;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="ConfidentialClientApplication"/>
+        /// </summary>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+        /// <param name="redirectUri">also named <i>Reply URI</i>, the redirect URI is the URI where the STS (Security Token Service) will call back the application
+        ///  with the security token. For details see https://aka.ms/msal-net-client-applications </param>
+        /// <param name="clientCredential">A <see cref="Microsoft.Identity.Client.ClientCredential"/> created either from an application secret or a certificate</param>
+        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified</param>
+        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <returns>A <see cref="ConfidentialClientApplication"/></returns>
+        public static ConfidentialClientApplication CreateClientApplication(string clientId,
+            string redirectUri,
+            ClientCredential clientCredential,
+            ITokenStorageProvider tokenStorageProvider = null,
+            string tenant = null,
+            NationalCloud nationalCloud = NationalCloud.Global)
+        {
+            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
+            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
+            return new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, tokenCacheProvider.GetTokenCacheInstnce(), null);
         }
 
         /// <summary>
@@ -61,7 +86,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await(ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, UserAssertion, ClientApplication.Authority);
+                    authenticationResult = await(ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, _userAssertion, ClientApplication.Authority);
                     break;
                 }
                 catch (MsalServiceException serviceException)
