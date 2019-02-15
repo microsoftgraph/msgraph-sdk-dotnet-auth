@@ -25,7 +25,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="UsernamePasswordProvider"/>
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="PublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication</param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication</param>
         /// <param name="scopes">Scopes required to access a protected API</param>
         /// <param name="username">Identifier of the user application requests token on behalf.
         /// Generally in UserPrincipalName (UPN) format, e.g. john.doe@contoso.com</param>
@@ -44,14 +44,14 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Creates a new <see cref="PublicClientApplication"/>
+        /// Creates a new <see cref="IPublicClientApplication"/>
         /// </summary>
         /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
         /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
         /// <param name="tenant">Tenant to sign-in users. This defaults to <c>organizations</c> if non is specified. </param>
         /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
-        /// <returns>A <see cref="PublicClientApplication"/></returns>
-        public static PublicClientApplication CreateClientApplication(string clientId,
+        /// <returns>A <see cref="IPublicClientApplication"/></returns>
+        public static IPublicClientApplication CreateClientApplication(string clientId,
             ITokenStorageProvider tokenStorageProvider = null,
             string tenant = null,
             NationalCloud nationalCloud = NationalCloud.Global)

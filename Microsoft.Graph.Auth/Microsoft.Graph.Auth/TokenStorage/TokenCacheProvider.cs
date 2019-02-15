@@ -8,7 +8,7 @@ namespace Microsoft.Graph.Auth
 
     internal class TokenCacheProvider
     {
-        string _cacheIdTag = "msgraph_token";
+        string _cacheIdTag = "_msgraph_token";
         ITokenStorageProvider _tokenStorageProvider = null;
         TokenCache _tokenCache = new TokenCache();
 
@@ -24,7 +24,7 @@ namespace Microsoft.Graph.Auth
                 _tokenCache.SetBeforeAccess(OnBeforeAccess);
                 _tokenCache.SetAfterAccess(OnAfterAccess);
             }
-                
+
             return _tokenCache;
         }
 
@@ -38,7 +38,7 @@ namespace Microsoft.Graph.Auth
 
         private async void OnBeforeAccess(TokenCacheNotificationArgs args)
         {
-            _tokenCache.Deserialize(await _tokenStorageProvider.GetTokenCacheAsync(args.Account.HomeAccountId.Identifier + _cacheIdTag));
+            _tokenCache.Deserialize(await _tokenStorageProvider.GetTokenCacheAsync(args.Account?.HomeAccountId?.Identifier + _cacheIdTag));
         }
     }
 }

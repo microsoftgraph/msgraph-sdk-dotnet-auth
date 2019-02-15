@@ -20,7 +20,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="OnBehalfOfProvider"/>
         /// </summary>
-        /// <param name="confidentialClientApplication">A <see cref="ConfidentialClientApplication"/> to pass to <see cref="OnBehalfOfProvider"/> for authentication</param>
+        /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="OnBehalfOfProvider"/> for authentication</param>
         /// <param name="scopes">Scopes required to access a protected API</param>
         /// <param name="userAssertion">Instance of <see cref="Microsoft.Identity.Client.UserAssertion"/> containing credential information about
         /// the user on behalf of whom to get a token.</param>
@@ -36,7 +36,7 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Creates a new <see cref="ConfidentialClientApplication"/>
+        /// Creates a new <see cref="IConfidentialClientApplication"/>
         /// </summary>
         /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
         /// <param name="redirectUri">also named <i>Reply URI</i>, the redirect URI is the URI where the STS (Security Token Service) will call back the application
@@ -45,8 +45,8 @@ namespace Microsoft.Graph.Auth
         /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
         /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified</param>
         /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
-        /// <returns>A <see cref="ConfidentialClientApplication"/></returns>
-        public static ConfidentialClientApplication CreateClientApplication(string clientId,
+        /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
+        public static IConfidentialClientApplication CreateClientApplication(string clientId,
             string redirectUri,
             ClientCredential clientCredential,
             ITokenStorageProvider tokenStorageProvider = null,
