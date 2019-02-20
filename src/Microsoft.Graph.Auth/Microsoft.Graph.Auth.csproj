@@ -26,8 +26,9 @@
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <SignAssembly>false</SignAssembly>
-    <DelaySign>false</DelaySign>
+    <DelaySign>true</DelaySign>
     <Version>1.13.0</Version>
+    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Graph.Core" Version="1.13.0-preview" />
