@@ -1,5 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <Description>Microsoft Graph Auth Library implements auth functionality used by Microsoft Graph Client Libraries.</Description>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <AssemblyTitle>Microsoft Graph Auth Library</AssemblyTitle>
+    <VersionPrefix>1.13.0</VersionPrefix>
+    <FileVersion>1.13.0</FileVersion>
+    <AssemblyVersion>1.13.0</AssemblyVersion>
+    <Authors>Microsoft</Authors>
+    <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
+    <AssemblyName>Microsoft.Graph.Auth</AssemblyName>
+    <PackageId>Microsoft.Graph.Auth</PackageId>
+    <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK</PackageTags>
+    <PackageReleaseNotes>
+    </PackageReleaseNotes>
+    <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
+    <PackageLicenseUrl>http://aka.ms/devservicesagreement</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -9,7 +25,9 @@
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
+    <SignAssembly>false</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <Version>1.13.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Graph.Core" Version="1.13.0-preview" />

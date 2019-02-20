@@ -63,6 +63,7 @@ namespace Microsoft.Graph.Auth
         {
             //TODO: Get ForceRefresh via AuthProviderOption
             //TODO: Get Scopes via AuthProviderOption
+            //TODO: Get User ClaimsPrincipal per request to build an IAccount
             bool forceRefresh = false;
             AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
 

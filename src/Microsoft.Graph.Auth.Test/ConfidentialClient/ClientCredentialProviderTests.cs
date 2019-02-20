@@ -28,7 +28,7 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
             };
             mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
             mockClientApplicationBase = new MockConfidentialClientApplication(scopes, mockUserAccounts, commonAuthority, false, clientId, mockAuthResult);
-            clientCredentialFlowProvider = new ClientCredentialProvider(mockClientApplicationBase.Object, scopes);
+            clientCredentialFlowProvider = new ClientCredentialProvider(mockClientApplicationBase.Object);
         }
 
         [TestMethod]
