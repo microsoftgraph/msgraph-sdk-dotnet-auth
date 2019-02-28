@@ -1,6 +1,6 @@
 ﻿// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
-//
+// ------------------------------------------------------------------------------
 
 namespace Microsoft.Graph.Auth
 {
@@ -16,6 +16,7 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class ClientCredentialProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
+        // TODO: needs to be formed based on the national cloud.
         private const string _resourceUrl = "https://graph.microsoft.com/.default";
 
         /// <summary>
@@ -26,7 +27,12 @@ namespace Microsoft.Graph.Auth
         public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
             : base(null)
         {
-            ClientApplication = confidentialClientApplication;
+            ClientApplication = confidentialClientApplication ?? throw new GraphAuthException(
+                    new Error
+                    {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication")
+                    });
         }
 
         /// <summary>
@@ -56,20 +62,20 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get ForceRefresh via AuthProviderOption
-            bool forceRefresh = false;
+            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             int retryCount = 0;
             do
             {
                 try
                 {
-                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(httpRequestMessage, forceRefresh);
-                    httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult?.AccessToken);
+                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(msalAuthProviderOption.ForceRefresh);
+                    if(!string.IsNullOrEmpty(authenticationResult?.AccessToken))
+                        httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
                     break;
                 }
                 catch (MsalServiceException serviceException)
                 {
-                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    if (serviceException.ErrorCode == ErrorConstants.Codes.TemporarilyUnavailable)
                     {
                         TimeSpan delay = this.GetRetryAfter(serviceException);
                         retryCount++;
@@ -78,17 +84,32 @@ namespace Microsoft.Graph.Auth
                     }
                     else
                     {
-                        throw serviceException;
+                        throw new GraphAuthException(
+                            new Error
+                            {
+                                Code = ErrorConstants.Codes.GeneralException,
+                                Message = ErrorConstants.Message.UnexpectedMsalException
+                            },
+                            serviceException);
                     }
                 }
+                catch(Exception exception)
+                {
+                    throw new GraphAuthException(
+                            new Error
+                            {
+                                Code = ErrorConstants.Codes.GeneralException,
+                                Message = ErrorConstants.Message.UnexpectedException
+                            },
+                            exception);
+                }
+
             } while (retryCount < MaxRetry);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(HttpRequestMessage httpRequestMessage, bool forceRefresh)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(bool forceRefresh)
         {
-            AuthenticationResult authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl }, forceRefresh);
-
-            return authenticationResult;
+            return await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl }, forceRefresh);
         }
     }
 }

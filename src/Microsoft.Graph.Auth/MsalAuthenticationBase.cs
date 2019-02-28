@@ -28,7 +28,7 @@ namespace Microsoft.Graph.Auth
         internal string[] Scopes { get; }
 
         /// <summary>
-        /// A MaxRetry property
+        /// A MaxRetry property.
         /// </summary>
         internal int MaxRetry { get; set; } = 1;
 
@@ -44,21 +44,56 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Attempts to acquire access token form the token cache silently by calling AcquireTokenSilentAsync
         /// </summary>
-        internal async Task<AuthenticationResult> GetAccessTokenSilentAsync(string[] scopes, bool forceRefresh)
+        internal async Task<AuthenticationResult> GetAccessTokenSilentAsync(MsalAuthProviderOption msalAuthProviderOption)
         {
-            AuthenticationResult authenticationResult = null;
-            IEnumerable<IAccount> accounts = await ClientApplication.GetAccountsAsync();
-            if (accounts.Any())
+            IAccount account = null;
+
+            if(msalAuthProviderOption.UserAccount?.ObjectId != null)
             {
-                try
-                {
-                    authenticationResult = await ClientApplication.AcquireTokenSilentAsync(scopes, accounts.FirstOrDefault(), ClientApplication.Authority, forceRefresh);
-                }
-                catch (Exception)
-                {
-                }
+                account = new GraphAccount(msalAuthProviderOption.UserAccount);
             }
-            return authenticationResult;
+            else
+            {
+                // If no graph user account is passed, try get the one in cache.
+                IEnumerable<IAccount> accounts = await ClientApplication.GetAccountsAsync();
+                account = accounts.FirstOrDefault();
+            }
+
+            if (account == null)
+                return null;
+
+            try
+            {
+                return await ClientApplication.AcquireTokenSilentAsync(
+                    msalAuthProviderOption.Scopes ?? Scopes,
+                    account,
+                    ClientApplication.Authority,
+                    msalAuthProviderOption.ForceRefresh);
+            }
+            catch (MsalUiRequiredException msalUiEx)
+            {
+                return null;
+            }
+            catch (MsalServiceException serviceException)
+            {
+                throw new GraphAuthException(
+                        new Error
+                        {
+                            Code = ErrorConstants.Codes.GeneralException,
+                            Message = ErrorConstants.Message.UnexpectedMsalException
+                        },
+                        serviceException);
+            }
+            catch (Exception exception)
+            {
+                throw new GraphAuthException(
+                        new Error
+                        {
+                            Code = ErrorConstants.Codes.GeneralException,
+                            Message = ErrorConstants.Message.UnexpectedException
+                        },
+                        exception);
+            }
         }
     }
 }

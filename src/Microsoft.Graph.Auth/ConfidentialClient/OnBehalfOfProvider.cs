@@ -16,23 +16,22 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class OnBehalfOfProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private UserAssertion _userAssertion;
         /// <summary>
         /// Constructs a new <see cref="OnBehalfOfProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="OnBehalfOfProvider"/> for authentication</param>
         /// <param name="scopes">Scopes required to access a protected API</param>
-        /// <param name="userAssertion">Instance of <see cref="Microsoft.Identity.Client.UserAssertion"/> containing credential information about
-        /// the user on behalf of whom to get a token.</param>
         public OnBehalfOfProvider(
             IConfidentialClientApplication confidentialClientApplication,
-            string[] scopes,
-            UserAssertion userAssertion)
+            string[] scopes)
             : base(scopes)
         {
-            ClientApplication = confidentialClientApplication;
-            // TODO: Move UserAssertion to AuthProviderOption - get it per request
-            _userAssertion = userAssertion;
+            ClientApplication = confidentialClientApplication ?? throw new GraphAuthException(
+                    new Error
+                    {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication")
+                    });
         }
 
         /// <summary>
@@ -65,20 +64,20 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get ForceRefresh via RequestContext
-            //TODO: Get Scopes via RequestContext
-            bool forceRefresh = false;
+            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            // TODO: Build GraphUserAccount from jwt token in UserAssertion            
 
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
+            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync();
+                authenticationResult = await GetNewAccessTokenAsync(msalAuthProviderOption);
             }
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            if(!string.IsNullOrEmpty(authenticationResult.AccessToken))
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -86,12 +85,12 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await(ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(Scopes, _userAssertion, ClientApplication.Authority);
+                    authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(msalAuthProviderOption.Scopes ?? Scopes, msalAuthProviderOption.UserAssertion, ClientApplication.Authority);
                     break;
                 }
                 catch (MsalServiceException serviceException)
                 {
-                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    if (serviceException.ErrorCode == ErrorConstants.Codes.TemporarilyUnavailable)
                     {
                         TimeSpan delay = this.GetRetryAfter(serviceException);
                         retryCount++;

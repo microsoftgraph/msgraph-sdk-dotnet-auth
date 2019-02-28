@@ -42,7 +42,12 @@ namespace Microsoft.Graph.Auth
             UIParent uiParent = null)
             : base(scopes)
         {
-            ClientApplication = publicClientApplication;
+            ClientApplication = publicClientApplication ?? throw new GraphAuthException(
+                    new Error
+                    {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, "publicClientApplication")
+                    });
             UIBehavior = uiBehavior ?? UIBehavior.SelectAccount;
             UIParent = uiParent;
         }
@@ -72,20 +77,21 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get ForceRefresh via RequestContext
-            //TODO: Get Scopes via RequestContext
-            bool forceRefresh = false;
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
+            GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
+            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            IAccount account = new GraphAccount(msalAuthProviderOption.UserAccount);
+            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync();
+                authenticationResult = await GetNewAccessTokenAsync(account, msalAuthProviderOption.Scopes ?? Scopes);
             }
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(IAccount account, string[] scopes)
         {
             IPublicClientApplication publicClientApplication = (ClientApplication as IPublicClientApplication);
             AuthenticationResult authenticationResult = null;
@@ -96,13 +102,12 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    var accounts = await publicClientApplication.GetAccountsAsync();
-                    authenticationResult = await publicClientApplication.AcquireTokenAsync(Scopes, accounts.FirstOrDefault(), UIBehavior, extraQueryParameter, null, ClientApplication.Authority, UIParent);
+                    authenticationResult = await publicClientApplication.AcquireTokenAsync(scopes, account, UIBehavior, extraQueryParameter, null, ClientApplication.Authority, UIParent);
                     break;
                 }
                 catch (MsalServiceException serviceException)
                 {
-                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    if (serviceException.ErrorCode == ErrorConstants.Codes.TemporarilyUnavailable)
                     {
                         TimeSpan delay = this.GetRetryAfter(serviceException);
                         retryCount++;

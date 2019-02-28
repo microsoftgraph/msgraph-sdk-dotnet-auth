@@ -16,12 +16,10 @@ namespace Microsoft.Graph.Auth
     // Only available on .Net & .Net core, not available for UWP
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by username and password.
+    /// This only works with work and school accounts.
     /// </summary>
     public class UsernamePasswordProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private string _username;
-        private SecureString _password;
-
         /// <summary>
         /// Constructs a new <see cref="UsernamePasswordProvider"/>
         /// </summary>
@@ -32,15 +30,15 @@ namespace Microsoft.Graph.Auth
         /// <param name="securePassword">A <see cref="SecureString"/> representing a user password</param>
         public UsernamePasswordProvider(
             IPublicClientApplication publicClientApplication,
-            string[] scopes,
-            string username,
-            SecureString password)
+            string[] scopes)
             : base(scopes)
         {
-            ClientApplication = publicClientApplication;
-            // TODO: Move to AuthProviderOption.
-            _username = username;
-            _password = password;
+            ClientApplication = publicClientApplication ?? throw new GraphAuthException(
+                    new Error
+                    {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, "publicClientApplication")
+                    });
         }
 
         /// <summary>
@@ -68,20 +66,20 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get ForceRefresh via RequestContext
-            //TODO: Get Scopes via RequestContext
-            bool forceRefresh = false;
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
+            GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
+            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync();
+                authenticationResult = await GetNewAccessTokenAsync(msalAuthProviderOption);
             }
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync()
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -89,12 +87,13 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenByUsernamePasswordAsync(Scopes, _username, _password);
+                    authenticationResult = await (ClientApplication as IPublicClientApplication)
+                        .AcquireTokenByUsernamePasswordAsync(msalAuthProviderOption.Scopes ?? Scopes, msalAuthProviderOption.UserAccount?.Email, ToSecureString(msalAuthProviderOption.Password));
                     break;
                 }
                 catch (MsalServiceException serviceException)
                 {
-                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    if (serviceException.ErrorCode == ErrorConstants.Codes.TemporarilyUnavailable)
                     {
                         TimeSpan delay = this.GetRetryAfter(serviceException);
                         retryCount++;
@@ -102,12 +101,43 @@ namespace Microsoft.Graph.Auth
                         await Task.Delay(delay);
                     }
                     else
-                        throw serviceException;
+                    {
+                        throw new GraphAuthException(
+                            new Error
+                            {
+                                Code = ErrorConstants.Codes.GeneralException,
+                                Message = ErrorConstants.Message.UnexpectedMsalException
+                            },
+                            serviceException);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    throw new GraphAuthException(
+                            new Error
+                            {
+                                Code = ErrorConstants.Codes.GeneralException,
+                                Message = ErrorConstants.Message.UnexpectedException
+                            },
+                            exception);
                 }
 
             } while (retryCount < MaxRetry);
 
             return authenticationResult;
+        }
+
+        private SecureString ToSecureString(string password)
+        {
+            if (string.IsNullOrEmpty(password))
+                return null;
+
+            SecureString secureString = new SecureString();
+            foreach (char item in password)
+            {
+                secureString.AppendChar(item);
+            }
+            return secureString;
         }
     }
 #endif

@@ -9,7 +9,7 @@ namespace Microsoft.Graph.Auth.Test.Mocks
 {
     public static class MockAuthResult
     {
-        public static AuthenticationResult GetAuthenticationResult(string[] scopes)
+        public static AuthenticationResult GetAuthenticationResult(string[] scopes = null)
         {
             return new AuthenticationResult(
                 accessToken: "access-token" + Convert.ToBase64String(Guid.NewGuid().ToByteArray()),

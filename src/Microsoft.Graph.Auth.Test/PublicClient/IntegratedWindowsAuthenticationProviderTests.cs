@@ -3,6 +3,8 @@
     using Microsoft.Graph.Auth.Test.Mocks;
     using Microsoft.Identity.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
@@ -11,73 +13,135 @@
     [TestClass]
     public class IntegratedWindowsAuthenticationProviderTests
     {
-        private MockPublicClientApplication mockClientApplicationBase;
-        private IEnumerable<MockUserAccount> mockUserAccounts;
-        private AuthenticationResult mockAuthResult;
-        private IntegratedWindowsAuthenticationProvider intergratedWindowsAuthProvider;
-        private const string clientId = "client-id";
-        private const string redirectUri = "redirectUri";
-        private const string appSecret = "appSecret";
-        private string organizationsAuthority = "https://login.microsoftonline.com/organizations/";
-        private string[] scopes = new string[] { "User.Read" };
+        private const string _clientId = "client_id";
+        private string[] _scopes = new string[] { "User.Read" };
+        private const string _organizationsAuthority = "https://login.microsoftonline.com/organizations/";
+        private AuthenticationResult _silentAuthResult;
+        private MockPublicClientApplication _mockClientApplicationBase;
+        private GraphUserAccount _graphUserAccount;
 
         [TestInitialize]
         public void Setup()
         {
-            mockUserAccounts = new List<MockUserAccount> {
-                new MockUserAccount("xyz@test.net", "login.microsoftonline.com")
+            _silentAuthResult = MockAuthResult.GetAuthenticationResult(_scopes);
+            _graphUserAccount = new GraphUserAccount
+            {
+                Email = "xyz@test.net",
+                Environment = "login.microsoftonline.com",
+                ObjectId = Guid.NewGuid().ToString(),
+                TenantId = Guid.NewGuid().ToString()
             };
-            mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            mockClientApplicationBase = new MockPublicClientApplication(scopes, mockUserAccounts, organizationsAuthority, false, clientId, mockAuthResult);
-            intergratedWindowsAuthProvider = new IntegratedWindowsAuthenticationProvider(mockClientApplicationBase.Object, scopes);
+            _mockClientApplicationBase = new MockPublicClientApplication(_scopes, _organizationsAuthority, false, _clientId, _silentAuthResult);
         }
 
         [TestMethod]
-        public void IntegratedWindowsAuthenticationProvider_DefaulltConstructor()
+        public void IntegratedWindows_ShouldConstructAuthProviderWithPublicClientApp()
         {
-            Assert.IsInstanceOfType(intergratedWindowsAuthProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(intergratedWindowsAuthProvider.ClientApplication);
-            Assert.IsInstanceOfType(intergratedWindowsAuthProvider.ClientApplication, typeof(IPublicClientApplication));
-            Assert.AreEqual(intergratedWindowsAuthProvider.ClientApplication.ClientId, clientId);
-            Assert.AreEqual(intergratedWindowsAuthProvider.ClientApplication.Authority, "https://login.microsoftonline.com/organizations/");
+            PublicClientApplication pca = new PublicClientApplication(_clientId, _organizationsAuthority, new TokenCache());
+            IntegratedWindowsAuthenticationProvider auth = new IntegratedWindowsAuthenticationProvider(pca, _scopes);
+
+            Assert.IsInstanceOfType(auth, typeof(IAuthenticationProvider), "Unexpected auth provider set.");
+            Assert.IsNotNull(auth.ClientApplication, "Client application not initialized.");
+            Assert.AreSame(pca, auth.ClientApplication, "Wrong client application set.");
         }
 
         [TestMethod]
-        public async Task IntegratedWindowsAuthenticationProvider_WithNoUserAccountInCache()
+        public void IntegratedWindows_ConstructorShouldThrowExceptionWithNullPublicClientApp()
         {
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+            GraphAuthException ex = Assert.ThrowsException<GraphAuthException>(() => new IntegratedWindowsAuthenticationProvider(null, _scopes));
 
-            mockClientApplicationBase.Setup(pca => pca.GetAccountsAsync())
-                .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
-
-            mockClientApplicationBase.Setup(pca => pca.AcquireTokenByIntegratedWindowsAuthAsync(scopes))
-                .Returns(Task.FromResult(expectedAuthResult));
-
-            intergratedWindowsAuthProvider.ClientApplication = mockClientApplicationBase.Object;
-
-            await intergratedWindowsAuthProvider.AuthenticateRequestAsync(httpRequestMessage);
-
-            Assert.IsInstanceOfType(intergratedWindowsAuthProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(intergratedWindowsAuthProvider.ClientApplication, typeof(IPublicClientApplication));
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, expectedAuthResult.AccessToken);
+            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
+            Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "publicClientApplication"), "Invalid exception message.");
         }
 
         [TestMethod]
-        public async Task IntegratedWindowsAuthenticationProvider_WithUserAccountInCache()
+        public void IntegratedWindows_ShouldCreatePublicClientApplicationWithMandatoryParams()
         {
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, "http://example.org/foo");
-            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
+            IClientApplicationBase clientApp = IntegratedWindowsAuthenticationProvider.CreateClientApplication(_clientId);
 
-            await intergratedWindowsAuthProvider.AuthenticateRequestAsync(httpRequestMessage);
+            Assert.IsInstanceOfType(clientApp, typeof(PublicClientApplication), "Unexpected client application set.");
+            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
+            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.Global], AuthConstants.Tenants.Organizations), clientApp.Authority, "Wrong authority set.");
+        }
 
-            Assert.IsInstanceOfType(intergratedWindowsAuthProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(intergratedWindowsAuthProvider.ClientApplication, typeof(IPublicClientApplication));
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, mockAuthResult.AccessToken);
+        [TestMethod]
+        public void IntegratedWindows_ShouldCreatePublicClientApplicationForConfiguredCloud()
+        {
+            string testTenant = "infotest";
+            IClientApplicationBase clientApp = IntegratedWindowsAuthenticationProvider.CreateClientApplication(_clientId, null, testTenant, NationalCloud.China);
+
+            Assert.IsInstanceOfType(clientApp, typeof(PublicClientApplication), "Unexpected client application set.");
+            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
+            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], testTenant), clientApp.Authority, "Wrong authority set.");
+        }
+
+        [TestMethod]
+        public async Task IntegratedWindows_ShouldGetNewAccessTokenWithNoIAccount()
+        {
+            UserAssertion assertion = new UserAssertion("access_token");
+            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
+            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
+            {
+                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
+                {
+                    {
+                        typeof(AuthenticationHandlerOption).ToString(),
+                        new AuthenticationHandlerOption
+                        {
+                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            {
+                                UserAssertion =  assertion
+                            }
+                        }
+                    }
+                }
+            });
+
+            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult();
+            _mockClientApplicationBase.Setup((pca) => pca.AcquireTokenByIntegratedWindowsAuthAsync(_scopes))
+                .ReturnsAsync(newAuthResult);
+
+            IntegratedWindowsAuthenticationProvider authProvider = new IntegratedWindowsAuthenticationProvider(_mockClientApplicationBase.Object, _scopes);
+            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
+
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication), "Unexpected client application set.");
+            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
+            Assert.AreEqual(newAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
+        }
+
+        [TestMethod]
+        public async Task IntegratedWindows_ShouldGetAccessTokenForRequestIAccount()
+        {
+            UserAssertion assertion = new UserAssertion("access_token");
+            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
+            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
+            {
+                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
+                {
+                    {
+                        typeof(AuthenticationHandlerOption).ToString(),
+                        new AuthenticationHandlerOption
+                        {
+                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            {
+                                UserAssertion =  assertion,
+                                UserAccount = _graphUserAccount
+                            }
+                        }
+                    }
+                }
+            });
+
+            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult();
+            _mockClientApplicationBase.Setup((pca) => pca.AcquireTokenByIntegratedWindowsAuthAsync(_scopes, _graphUserAccount.Email))
+                .ReturnsAsync(newAuthResult);
+
+            IntegratedWindowsAuthenticationProvider authProvider = new IntegratedWindowsAuthenticationProvider(_mockClientApplicationBase.Object, _scopes);
+            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
+
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IPublicClientApplication), "Unexpected client application set.");
+            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
+            Assert.AreEqual(_silentAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
         }
     }
 }

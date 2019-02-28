@@ -31,7 +31,7 @@ namespace Microsoft.Graph.Auth
             }
 
             if (delay == null)
-                throw new MsalServiceException(serviceException.ErrorCode, MsalAuthErrorConstants.Message.MissingRetryAfterHeader);
+                throw new MsalServiceException(serviceException.ErrorCode, ErrorConstants.Message.MissingRetryAfterHeader);
 
             return delay.Value;
         }

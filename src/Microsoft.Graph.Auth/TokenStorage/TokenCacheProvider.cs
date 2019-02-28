@@ -8,9 +8,9 @@ namespace Microsoft.Graph.Auth
 
     internal class TokenCacheProvider
     {
-        string _cacheIdTag = "_msgraph_token";
-        ITokenStorageProvider _tokenStorageProvider = null;
-        TokenCache _tokenCache = new TokenCache();
+        private const string _cacheIdTag = "_msgraph_token";
+        private ITokenStorageProvider _tokenStorageProvider = null;
+        private TokenCache _tokenCache = new TokenCache();
 
         internal TokenCacheProvider(ITokenStorageProvider tokenStorageProvider = null)
         {

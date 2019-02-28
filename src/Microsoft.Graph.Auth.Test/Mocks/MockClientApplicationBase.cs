@@ -7,7 +7,7 @@
     using System.Threading.Tasks;
     public class MockPublicClientApplication : Mock<IPublicClientApplication>
     {
-        public MockPublicClientApplication(string[] scopes, IEnumerable<IAccount> accounts, string authority, bool forceRefresh, string clientId, AuthenticationResult authenticationResult)
+        public MockPublicClientApplication(string[] scopes, string authority, bool forceRefresh, string clientId, AuthenticationResult authenticationResult)
             : base(MockBehavior.Strict)
         {
             this.SetupAllProperties();
@@ -22,38 +22,38 @@
 
             this.Setup(
                 publicClientApplication => publicClientApplication.GetAccountsAsync())
-                .Returns(Task.FromResult(accounts));
+                .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
 
             this.Setup(
-                publicClientApplication => publicClientApplication.AcquireTokenSilentAsync(scopes, accounts.FirstOrDefault(), authority, forceRefresh))
+                publicClientApplication => publicClientApplication.AcquireTokenSilentAsync(scopes, It.IsAny<IAccount>(), authority, forceRefresh))
                 .Returns(Task.FromResult(authenticationResult));
         }
     }
 
     public class MockConfidentialClientApplication : Mock<IConfidentialClientApplication>
     {
-        public MockConfidentialClientApplication(string[] scopes, IEnumerable<IAccount> accounts, string authority, bool forceRefresh, string clientId, AuthenticationResult authenticationResult)
+        public MockConfidentialClientApplication(string[] scopes, string authority, bool forceRefresh, string clientId, AuthenticationResult authenticationResult)
             : base(MockBehavior.Strict)
         {
+            this.CallBase = true;
+
             this.SetupAllProperties();
 
             this.SetupGet(
-                publicClientApplication => publicClientApplication.ClientId)
+                confidentialClientApplication => confidentialClientApplication.ClientId)
                 .Returns(clientId);
 
             this.SetupGet(
-                publicClientApplication => publicClientApplication.Authority)
+                confidentialClientApplication => confidentialClientApplication.Authority)
                 .Returns(authority);
 
             this.Setup(
-                publicClientApplication => publicClientApplication.GetAccountsAsync())
-                .Returns(Task.FromResult(accounts));
+                confidentialClientApplication => confidentialClientApplication.GetAccountsAsync())
+                .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
 
             this.Setup(
-                publicClientApplication => publicClientApplication.AcquireTokenSilentAsync(scopes, accounts.FirstOrDefault(), authority, forceRefresh))
-                .Returns(Task.FromResult(authenticationResult));
-
-            //AcquireTokenSilentAsync(Scopes, users.FirstOrDefault(), ClientApplication.Authority, forceRefresh);
+                confidentialClientApplication => confidentialClientApplication.AcquireTokenSilentAsync(scopes, It.IsAny<IAccount>(), authority, forceRefresh))
+                .ReturnsAsync(authenticationResult);
         }
     }
 }

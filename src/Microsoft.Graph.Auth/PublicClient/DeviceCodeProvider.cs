@@ -31,11 +31,16 @@ namespace Microsoft.Graph.Auth
         public DeviceCodeProvider(
             IPublicClientApplication publicClientApplication,
             string[] scopes,
-            Func<DeviceCodeResult, Task> deviceCodeResultCallback)
+            Func<DeviceCodeResult, Task> deviceCodeResultCallback = null)
             : base(scopes)
         {
-            ClientApplication = publicClientApplication;
-            DeviceCodeResultCallback = deviceCodeResultCallback;
+            ClientApplication = publicClientApplication ?? throw new GraphAuthException(
+                    new Error
+                    {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, "publicClientApplication")
+                    });
+            DeviceCodeResultCallback = deviceCodeResultCallback ?? DefaultDeviceCallbackAsync;
         }
 
         /// <summary>
@@ -63,22 +68,20 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            //TODO: Get CancellationToken via RequestContext
-            //TODO: Get ForceRefresh via AuthProviderOption
-            //TODO: Get Scopes via AuthProviderOption
-            CancellationToken cancellationToken = CancellationToken.None;
-            bool forceRefresh = false;
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(Scopes, forceRefresh);
+            GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
+            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync(cancellationToken);
+                authenticationResult = await GetNewAccessTokenAsync(requestContext.CancellationToken, msalAuthProviderOption.Scopes);
             }
 
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
+                httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken, string[] requestScopes)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -88,7 +91,7 @@ namespace Microsoft.Graph.Auth
                 try
                 {
                     authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenWithDeviceCodeAsync(
-                        Scopes,
+                        requestScopes ?? Scopes,
                         extraQueryParameter,
                         DeviceCodeResultCallback,
                         cancellationToken);
@@ -96,7 +99,7 @@ namespace Microsoft.Graph.Auth
                 }
                 catch (MsalServiceException serviceException)
                 {
-                    if (serviceException.ErrorCode == MsalAuthErrorConstants.Codes.TemporarilyUnavailable)
+                    if (serviceException.ErrorCode == ErrorConstants.Codes.TemporarilyUnavailable)
                     {
                         TimeSpan delay = this.GetRetryAfter(serviceException);
                         retryCount++;
@@ -117,6 +120,12 @@ namespace Microsoft.Graph.Auth
             } while (retryCount < MaxRetry);
 
             return authenticationResult;
+        }
+
+        private async Task DefaultDeviceCallbackAsync(DeviceCodeResult result)
+        {
+            Console.WriteLine(result.Message);
+            await Task.FromResult(0);
         }
     }
 }

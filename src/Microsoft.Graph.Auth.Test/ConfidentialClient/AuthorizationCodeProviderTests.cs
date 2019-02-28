@@ -12,72 +12,108 @@
     [TestClass]
     public class AuthorizationCodeProviderTests
     {
-        private AuthorizationCodeProvider authCodeFlowProvider;
-        private List<MockUserAccount> mockUserAccounts;
-        private AuthenticationResult mockAuthResult;
-        private MockConfidentialClientApplication mockClientApplicationBase;
-        private const string clientId = "client_id";
-        private string[] scopes = new string[] { "User.Read" };
-        private const string redirectUri = "redirectUri";
-        private const string appSecret = "appSecret";
+        private const string _clientId = "client_id";
+        private const string _redirectUri = "redirectUri";
+        private string[] _scopes = new string[] { "User.Read" };
+        private AuthenticationResult _mockAuthResult;
+        private MockConfidentialClientApplication _mockClientApplicationBase;
+        private GraphUserAccount _graphUserAccount;
+        private ClientCredential _clientCredential;
 
         [TestInitialize]
         public void Setup()
         {
-            mockUserAccounts = new List<MockUserAccount> {
-                new MockUserAccount("xyz@test.net", "login.microsoftonline.com")
+            _clientCredential = new ClientCredential("appSecret");
+            _mockAuthResult = MockAuthResult.GetAuthenticationResult(_scopes);
+            _graphUserAccount = new GraphUserAccount
+            {
+                Email = "xyz@test.net",
+                Environment = "login.microsoftonline.com",
+                ObjectId = Guid.NewGuid().ToString(),
+                TenantId = Guid.NewGuid().ToString()
             };
-            mockAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-            mockClientApplicationBase = new MockConfidentialClientApplication(scopes, mockUserAccounts, "common", false, clientId, mockAuthResult);
-            authCodeFlowProvider = new AuthorizationCodeProvider(mockClientApplicationBase.Object, scopes);
+            _mockClientApplicationBase = new MockConfidentialClientApplication(_scopes, "common", false, _clientId, _mockAuthResult);
         }
 
         [TestMethod]
-        public void AuthorizationCodeProvider_DefaultConstructor()
+        public void AuthorizationCodeProvider_ShouldConstructAuthProviderWithConfidentialClientApp()
         {
-            Assert.IsInstanceOfType(authCodeFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsNotNull(authCodeFlowProvider.ClientApplication);
+            ConfidentialClientApplication cca = new ConfidentialClientApplication(_clientId, _redirectUri, _clientCredential, new TokenCache(), null);
+            AuthorizationCodeProvider auth = new AuthorizationCodeProvider(cca, _scopes);
+
+            Assert.IsInstanceOfType(auth, typeof(IAuthenticationProvider), "Unexpected auth provider set.");
+            Assert.IsNotNull(auth.ClientApplication, "Client application not initialized.");
+            Assert.AreSame(cca, auth.ClientApplication, "Wrong client application set.");
         }
 
         [TestMethod]
-        public async Task AuthorizationCodeProvider_WithNoUserAccountInCache()
+        public void AuthorizationCodeProvider_ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
+        {
+            GraphAuthException ex = Assert.ThrowsException<GraphAuthException>(() => new AuthorizationCodeProvider(null, _scopes));
+
+            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
+            Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"), "Invalid exception message.");
+        }
+
+        [TestMethod]
+        public void AuthorizationCodeProvider_ShouldCreateConfidentialClientApplicationWithMandatoryParams()
+        {
+            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(_clientId, _redirectUri, _clientCredential);
+
+            Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
+            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
+            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.Global], AuthConstants.Tenants.Common), clientApp.Authority, "Wrong authority set.");
+        }
+
+        [TestMethod]
+        public void AuthorizationCodeProvider_ShouldCreateConfidentialClientApplicationForConfiguredCloud()
+        {
+            string testTenant = "infotest";
+            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(_clientId, _redirectUri, _clientCredential, null, testTenant, NationalCloud.China);
+
+            Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
+            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
+            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], testTenant), clientApp.Authority, "Wrong authority set.");
+        }
+
+        [TestMethod]
+        public async Task AuthorizationCodeProvider_ShouldThrowChallangeRequiredExceptionWithNoIAccount()
+        {
+            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
+            AuthorizationCodeProvider authCodeFlowProvider = new AuthorizationCodeProvider(_mockClientApplicationBase.Object, _scopes);
+
+            GraphAuthException ex = await Assert.ThrowsExceptionAsync<GraphAuthException>(async () => await authCodeFlowProvider.AuthenticateRequestAsync(httpRequestMessage));
+
+            Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.AuthenticationChallengeRequired, "Invalid exception message.");
+            Assert.IsInstanceOfType(authCodeFlowProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
+            Assert.IsNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
+        }
+
+        [TestMethod]
+        public async Task AuthorizationCodeProvider_ShouldGetExistingAccessTokenForRequestIAccount()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            var expectedAuthResult = MockAuthResult.GetAuthenticationResult(scopes);
-
-            mockClientApplicationBase.Setup(
-                cca => cca.GetAccountsAsync())
-                .Returns(Task.FromResult(new List<IAccount>().AsEnumerable()));
-
-            authCodeFlowProvider.ClientApplication = mockClientApplicationBase.Object;
-
-            try
+            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
             {
-                await authCodeFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
-            }
-            catch (Exception ex)
-            {
-                Assert.IsInstanceOfType(ex, typeof(MsalServiceException));
-                Assert.AreEqual(ex.Message, MsalAuthErrorConstants.Message.AuthenticationChallengeRequired);
-            }
+                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
+                {
+                    {
+                        typeof(AuthenticationHandlerOption).ToString(),
+                        new AuthenticationHandlerOption
+                        {
+                            AuthenticationProviderOption = new MsalAuthProviderOption{ UserAccount = _graphUserAccount}
+                        }
+                    }
+                }
+            });
 
-            Assert.IsInstanceOfType(authCodeFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(authCodeFlowProvider.ClientApplication, typeof(IConfidentialClientApplication));
-            Assert.IsNull(httpRequestMessage.Headers.Authorization);
-        }
-
-        [TestMethod]
-        public async Task AuthorizationCodeProvider_WithUserAccountInCache()
-        {
-            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-
+            AuthorizationCodeProvider authCodeFlowProvider = new AuthorizationCodeProvider(_mockClientApplicationBase.Object, _scopes);
             await authCodeFlowProvider.AuthenticateRequestAsync(httpRequestMessage);
 
-            Assert.IsInstanceOfType(authCodeFlowProvider, typeof(IAuthenticationProvider));
-            Assert.IsInstanceOfType(authCodeFlowProvider.ClientApplication, typeof(IConfidentialClientApplication));
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer);
-            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, mockAuthResult.AccessToken);
+            Assert.IsInstanceOfType(authCodeFlowProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
+            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Auhtorization header not set.");
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer, "Unexpected auhtorization header scheme set.");
+            Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, _mockAuthResult.AccessToken, "Unexpected auhtorization header parameter set.");
         }
     }
 }
