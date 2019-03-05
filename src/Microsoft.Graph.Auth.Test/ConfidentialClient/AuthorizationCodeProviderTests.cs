@@ -3,6 +3,7 @@
     using Microsoft.Graph.Auth.Test.Mocks;
     using Microsoft.Identity.Client;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -13,18 +14,17 @@
     public class AuthorizationCodeProviderTests
     {
         private const string _clientId = "client_id";
-        private const string _redirectUri = "redirectUri";
+        private const string _redirectUri = "redirect_uri";
         private string[] _scopes = new string[] { "User.Read" };
+        private ClientCredential _clientCredential;
+        private GraphUserAccount _graphUserAccount;
         private AuthenticationResult _mockAuthResult;
         private MockConfidentialClientApplication _mockClientApplicationBase;
-        private GraphUserAccount _graphUserAccount;
-        private ClientCredential _clientCredential;
 
         [TestInitialize]
         public void Setup()
         {
-            _clientCredential = new ClientCredential("appSecret");
-            _mockAuthResult = MockAuthResult.GetAuthenticationResult(_scopes);
+            _clientCredential = new ClientCredential("app_secret");
             _graphUserAccount = new GraphUserAccount
             {
                 Email = "xyz@test.net",
@@ -32,6 +32,7 @@
                 ObjectId = Guid.NewGuid().ToString(),
                 TenantId = Guid.NewGuid().ToString()
             };
+            _mockAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount), _scopes);
             _mockClientApplicationBase = new MockConfidentialClientApplication(_scopes, "common", false, _clientId, _mockAuthResult);
         }
 
@@ -66,18 +67,18 @@
         }
 
         [TestMethod]
-        public void AuthorizationCodeProvider_ShouldCreateConfidentialClientApplicationForConfiguredCloud()
+        public void AuthorizationCodeProvider_ShouldCreateConfidentialClientApplicationForConfiguredNationalCloud()
         {
-            string testTenant = "infotest";
-            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(_clientId, _redirectUri, _clientCredential, null, testTenant, NationalCloud.China);
+            string tenant = "infotest";
+            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(_clientId, _redirectUri, _clientCredential, null, tenant, NationalCloud.China);
 
             Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
             Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
-            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], testTenant), clientApp.Authority, "Wrong authority set.");
+            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], tenant), clientApp.Authority, "Wrong authority set.");
         }
 
         [TestMethod]
-        public async Task AuthorizationCodeProvider_ShouldThrowChallangeRequiredExceptionWithNoIAccount()
+        public async Task AuthorizationCodeProvider_ShouldThrowChallangeRequiredExceptionWhenNoUserAccountIsNull()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             AuthorizationCodeProvider authCodeFlowProvider = new AuthorizationCodeProvider(_mockClientApplicationBase.Object, _scopes);
@@ -90,7 +91,7 @@
         }
 
         [TestMethod]
-        public async Task AuthorizationCodeProvider_ShouldGetExistingAccessTokenForRequestIAccount()
+        public async Task AuthorizationCodeProvider_ShouldGetCachedAccessTokenForRequestUserAccount()
         {
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
@@ -101,7 +102,10 @@
                         typeof(AuthenticationHandlerOption).ToString(),
                         new AuthenticationHandlerOption
                         {
-                            AuthenticationProviderOption = new MsalAuthProviderOption{ UserAccount = _graphUserAccount}
+                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            {
+                                UserAccount = _graphUserAccount
+                            }
                         }
                     }
                 }
@@ -114,6 +118,22 @@
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Auhtorization header not set.");
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Scheme, CoreConstants.Headers.Bearer, "Unexpected auhtorization header scheme set.");
             Assert.AreEqual(httpRequestMessage.Headers.Authorization.Parameter, _mockAuthResult.AccessToken, "Unexpected auhtorization header parameter set.");
+        }
+
+        [TestMethod]
+        public async Task AuthorizationCodeProvider_ShouldGetTokenFromAuthorizationCode()
+        {
+            var newAuthResult = MockAuthResult.GetAuthenticationResult(null, _scopes);
+
+            string authCode = "Auth_Code";
+            _mockClientApplicationBase.Setup(cca => cca.AcquireTokenByAuthorizationCodeAsync(authCode, _scopes))
+                .ReturnsAsync(newAuthResult);
+            AuthorizationCodeProvider authCodeFlowProvider = new AuthorizationCodeProvider(_mockClientApplicationBase.Object, _scopes);
+
+            var authResult = await authCodeFlowProvider.GetTokenByAuthorizationCodeAsync(authCode);
+
+            Assert.IsInstanceOfType(authCodeFlowProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
+            Assert.AreSame(newAuthResult.Scopes, authResult.Scopes, "Unexpected scopes set.");
         }
     }
 }

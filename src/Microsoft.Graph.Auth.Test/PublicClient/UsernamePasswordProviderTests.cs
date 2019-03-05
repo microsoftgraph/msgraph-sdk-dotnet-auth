@@ -24,7 +24,6 @@
         [TestInitialize]
         public void Setup()
         {
-            _silentAuthResult = MockAuthResult.GetAuthenticationResult(_scopes);
             _graphUserAccount = new GraphUserAccount
             {
                 Email = "xyz@test.net",
@@ -32,6 +31,7 @@
                 ObjectId = Guid.NewGuid().ToString(),
                 TenantId = Guid.NewGuid().ToString()
             };
+            _silentAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount), _scopes);
             _mockClientApplicationBase = new MockPublicClientApplication(_scopes, _organizationsAuthority, false, _clientId, _silentAuthResult);
         }
 

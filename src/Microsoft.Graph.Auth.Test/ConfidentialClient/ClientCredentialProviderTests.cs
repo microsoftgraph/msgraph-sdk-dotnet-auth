@@ -25,7 +25,7 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
         public void Setup()
         {
             _clientCredential = new ClientCredential("appSecret");
-            _mockAuthResult = MockAuthResult.GetAuthenticationResult();
+            _mockAuthResult = MockAuthResult.GetAuthenticationResult(null);
             _mockClientApplicationBase = new MockConfidentialClientApplication(null, _commonAuthority, false, _clientId, _mockAuthResult);
         }
 
@@ -62,16 +62,16 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
         [TestMethod]
         public void ClientCredentialProvider_ShouldCreateConfidentialClientApplicationForConfiguredCloud()
         {
-            string testTenant = "infotest";
-            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(_clientId, _clientCredential, null, testTenant, NationalCloud.China);
+            string tenant = "infotest";
+            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(_clientId, _clientCredential, null, tenant, NationalCloud.China);
 
             Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
             Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
-            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], testTenant), clientApp.Authority, "Wrong authority set.");
+            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], tenant), clientApp.Authority, "Wrong authority set.");
         }
 
         [TestMethod]
-        public async Task ClientCredentialProvider_ShouldGetNewAccessTokenWithNoIAccount()
+        public async Task ClientCredentialProvider_ShouldGetNewAccessTokenWhenUserAccountIsNull()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             _mockClientApplicationBase.Setup((cca) => cca.AcquireTokenForClientAsync(new string[] { "https://graph.microsoft.com/.default" }, false))

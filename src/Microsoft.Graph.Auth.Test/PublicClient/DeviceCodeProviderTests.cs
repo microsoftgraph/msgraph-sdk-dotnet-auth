@@ -24,7 +24,6 @@
         [TestInitialize]
         public void Setup()
         {
-            _silentAuthResult = MockAuthResult.GetAuthenticationResult(_scopes);
             _graphUserAccount = new GraphUserAccount
             {
                 Email = "xyz@test.net",
@@ -32,6 +31,7 @@
                 ObjectId = Guid.NewGuid().ToString(),
                 TenantId = Guid.NewGuid().ToString()
             };
+            _silentAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount), _scopes);
             _mockClientApplicationBase = new MockPublicClientApplication(_scopes, _organizationsAuthority, false, _clientId, _silentAuthResult);
         }
 
@@ -98,7 +98,7 @@
                 }
             });
 
-            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult();
+            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount));
             _mockClientApplicationBase.Setup((pca) => pca.AcquireTokenWithDeviceCodeAsync(_scopes, null, It.IsAny<Func<DeviceCodeResult, Task>>(), CancellationToken.None))
                 .ReturnsAsync(newAuthResult);
 
@@ -133,7 +133,7 @@
                 }
             });
 
-            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult();
+            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount));
             _mockClientApplicationBase.Setup((pca) => pca.AcquireTokenWithDeviceCodeAsync(_scopes, It.IsAny<Func<DeviceCodeResult, Task>>()))
                 .ReturnsAsync(newAuthResult);
 

@@ -16,14 +16,12 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class ClientCredentialProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        // TODO: needs to be formed based on the national cloud.
         private const string _resourceUrl = "https://graph.microsoft.com/.default";
 
         /// <summary>
         /// Constructs a new <see cref=" ClientCredentialProvider"/>
         /// </summary>
-        /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="ClientCredentialProvider"/> for authentication</param>
-        /// <param name="scopes">Scopes required to access a protected API</param>
+        /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="ClientCredentialProvider"/> for authentication.</param>
         public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
             : base(null)
         {
@@ -68,8 +66,9 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    AuthenticationResult authenticationResult = await GetNewAccessTokenAsync(msalAuthProviderOption.ForceRefresh);
-                    if(!string.IsNullOrEmpty(authenticationResult?.AccessToken))
+                    AuthenticationResult authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl }, msalAuthProviderOption.ForceRefresh);
+
+                    if (!string.IsNullOrEmpty(authenticationResult?.AccessToken))
                         httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
                     break;
                 }
@@ -105,11 +104,6 @@ namespace Microsoft.Graph.Auth
                 }
 
             } while (retryCount < MaxRetry);
-        }
-
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(bool forceRefresh)
-        {
-            return await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl }, forceRefresh);
         }
     }
 }

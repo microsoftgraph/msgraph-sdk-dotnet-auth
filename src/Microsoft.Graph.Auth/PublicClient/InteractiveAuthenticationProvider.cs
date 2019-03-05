@@ -5,7 +5,6 @@
 namespace Microsoft.Graph.Auth
 {
     using System;
-    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -30,10 +29,9 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication</param>
-        /// <param name="scopes">Scopes required to access a protected API</param>
-        /// <param name="account">Account to use for the interactive token acquisition. See <see cref="IAccount"/> for ways to get an account</param>
-        /// <param name="uiBehavior">Designed interactive experience for the user. Defaults to <see cref="UIBehavior.SelectAccount"/></param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="scopes">Scopes required to access a protected API.</param>
+        /// <param name="uiBehavior">Designed interactive experience for the user. Defaults to <see cref="UIBehavior.SelectAccount"/>.</param>
         /// <param name="uiParent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
         public InteractiveAuthenticationProvider(
             IPublicClientApplication publicClientApplication,
@@ -55,10 +53,10 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Creates a new <see cref="IPublicClientApplication"/>
         /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified. </param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
+        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token.</param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified.</param>
+        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
         /// <returns>A <see cref="IPublicClientApplication"/></returns>
         public static IPublicClientApplication CreateClientApplication(string clientId,
             ITokenStorageProvider tokenStorageProvider = null,
@@ -74,7 +72,7 @@ namespace Microsoft.Graph.Auth
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token. If a token is not found or expired, it gets a new one.
         /// </summary>
-        /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
+        /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
@@ -121,8 +119,24 @@ namespace Microsoft.Graph.Auth
                     }
                     else
                     {
-                        throw serviceException;
+                        throw new GraphAuthException(
+                            new Error
+                            {
+                                Code = ErrorConstants.Codes.GeneralException,
+                                Message = ErrorConstants.Message.UnexpectedMsalException
+                            },
+                            serviceException);
                     }
+                }
+                catch (Exception exception)
+                {
+                    throw new GraphAuthException(
+                            new Error
+                            {
+                                Code = ErrorConstants.Codes.GeneralException,
+                                Message = ErrorConstants.Message.UnexpectedException
+                            },
+                            exception);
                 }
 
             } while (retryCount < MaxRetry);

@@ -55,14 +55,14 @@ namespace Microsoft.Graph.Auth
             string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
             return new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, tokenCacheProvider.GetTokenCacheInstnce(), null);
         }
-       
+
         /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token.
-        /// If an access token doesn't exist, it will throw a <see cref="MsalServiceException"/>
+        /// If an access token doesn't exist, it will throw a <see cref="GraphAuthException"/>
         /// and the web app must handle this and perform a challange.
         /// </summary>
-        /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
+        /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
@@ -82,9 +82,9 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Helper used in Startup class to retreive a token from an authorization code.
+        /// Helper used in Startup class to retrieve a token from an authorization code.
         /// </summary>
-        /// <param name="authorizationCode">An authorization code received from an openid connect auth flow. </param>
+        /// <param name="authorizationCode">An authorization code received from an openid connect auth flow.</param>
         /// <returns></returns>
         public async Task<AuthenticationResult> GetTokenByAuthorizationCodeAsync(string authorizationCode)
         {

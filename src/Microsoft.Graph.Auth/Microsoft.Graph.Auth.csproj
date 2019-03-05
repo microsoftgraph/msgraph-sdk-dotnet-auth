@@ -28,8 +28,8 @@
     <SignAssembly>false</SignAssembly>
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
-    <!--Add preview tag-->
     <Version>0.1.0</Version>
+    <VersionSurfix>preview</VersionSurfix>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>

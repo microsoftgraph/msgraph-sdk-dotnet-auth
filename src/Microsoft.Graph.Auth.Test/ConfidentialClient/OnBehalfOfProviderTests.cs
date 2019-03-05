@@ -15,6 +15,7 @@
     {
         private const string _clientId = "client_id";
         private const string _redirectUri = "redirectUri";
+        private const string _jwtAccessToken = "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkFBMjMyVEVTVCIsImFsZyI6IkhTMjU2In0.eyJmYW1pbHlfbmFtZSI6IkRvZSIsImdpdmVuX25hbWUiOiJKb2huIiwibmFtZSI6IkpvaG4gRG9lIiwib2lkIjoiZTYwMmFkYTctNmVmZC00ZTE4LWE5NzktNjNjMDJiOWYzYzc2Iiwic2NwIjoiVXNlci5SZWFkQmFzaWMuQWxsIiwidGlkIjoiNmJjMTUzMzUtZTJiOC00YTlhLTg2ODMtYTUyYTI2YzhjNTgzIiwidW5pcXVlX25hbWUiOiJqb2huQGRvZS50ZXN0LmNvbSIsInVwbiI6ImpvaG5AZG9lLnRlc3QuY29tIn0.hf9xI5XYBjGec-4n4_Kxj8Nd2YHBtihdevYhzFxbpXQ";
         private string[] _scopes = new string[] { "User.Read" };
         private AuthenticationResult _silentAuthResult;
         private MockConfidentialClientApplication _mockClientApplicationBase;
@@ -25,7 +26,6 @@
         public void Setup()
         {
             _clientCredential = new ClientCredential("appSecret");
-            _silentAuthResult = MockAuthResult.GetAuthenticationResult(_scopes);
             _graphUserAccount = new GraphUserAccount
             {
                 Email = "xyz@test.net",
@@ -33,6 +33,8 @@
                 ObjectId = Guid.NewGuid().ToString(),
                 TenantId = Guid.NewGuid().ToString()
             };
+            _silentAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount), _scopes);
+            
             _mockClientApplicationBase = new MockConfidentialClientApplication(_scopes, "common", false, _clientId, _silentAuthResult);
         }
 
@@ -78,9 +80,42 @@
         }
 
         [TestMethod]
-        public async Task OnBehalfOfProvider_ShouldGetNewAccessTokenWithNoIAccount()
+        public async Task OnBehalfOfProvider_ShouldGetNewAccessTokenWithNoUserAssertion()
         {
-            UserAssertion assertion = new UserAssertion("access_token");
+            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
+            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
+            {
+                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
+                {
+                    {
+                        typeof(AuthenticationHandlerOption).ToString(),
+                        new AuthenticationHandlerOption
+                        {
+                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            {
+                                UserAssertion =  null
+                            }
+                        }
+                    }
+                }
+            });
+
+            AuthenticationResult expectedAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount));
+            _mockClientApplicationBase.Setup((cca) => cca.AcquireTokenOnBehalfOfAsync(_scopes, It.IsAny<UserAssertion>(), "common"))
+                .ReturnsAsync(expectedAuthResult);
+
+            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
+            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
+
+            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
+            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
+            Assert.AreEqual(expectedAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
+        }
+
+        [TestMethod]
+        public async Task OnBehalfOfProvider_ShouldGetCachedAccessTokenForUserAssertion()
+        {
+            UserAssertion assertion = new UserAssertion(_jwtAccessToken);
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
             {
@@ -98,45 +133,6 @@
                     }
                 }
             });
-
-            AuthenticationResult expectedAuthResult = MockAuthResult.GetAuthenticationResult();
-            _mockClientApplicationBase.Setup((cca) => cca.AcquireTokenOnBehalfOfAsync(_scopes, assertion, "common"))
-                .ReturnsAsync(expectedAuthResult);
-
-            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
-            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
-
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
-            Assert.AreEqual(expectedAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
-        }
-
-        [TestMethod]
-        public async Task OnBehalfOfProvider_ShouldGetAccessTokenForRequestIAccount()
-        {
-            UserAssertion assertion = new UserAssertion("access_token");
-            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
-            {
-                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
-                {
-                    {
-                        typeof(AuthenticationHandlerOption).ToString(),
-                        new AuthenticationHandlerOption
-                        {
-                            AuthenticationProviderOption = new MsalAuthProviderOption
-                            {
-                                UserAssertion =  assertion,
-                                UserAccount = _graphUserAccount
-                            }
-                        }
-                    }
-                }
-            });
-
-            AuthenticationResult newAuthResult = MockAuthResult.GetAuthenticationResult();
-            _mockClientApplicationBase.Setup((cca) => cca.AcquireTokenOnBehalfOfAsync(_scopes, assertion, "common"))
-                .ReturnsAsync(newAuthResult);
 
             OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
             await authProvider.AuthenticateRequestAsync(httpRequestMessage);

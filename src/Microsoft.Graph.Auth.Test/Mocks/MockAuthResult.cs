@@ -9,7 +9,7 @@ namespace Microsoft.Graph.Auth.Test.Mocks
 {
     public static class MockAuthResult
     {
-        public static AuthenticationResult GetAuthenticationResult(string[] scopes = null)
+        public static AuthenticationResult GetAuthenticationResult(IAccount account = null, string[] scopes = null)
         {
             return new AuthenticationResult(
                 accessToken: "access-token" + Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
@@ -18,7 +18,7 @@ namespace Microsoft.Graph.Auth.Test.Mocks
                 expiresOn: DateTimeOffset.Now,
                 extendedExpiresOn: DateTimeOffset.Now,
                 tenantId: "tenant-id" + Guid.NewGuid(),
-                account: null,
+                account: account,
                 idToken: "id-token" + Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
                 scopes: scopes);
         }

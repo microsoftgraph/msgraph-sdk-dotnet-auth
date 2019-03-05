@@ -13,7 +13,7 @@ namespace Microsoft.Graph.Auth
     using System;
 
     /// <summary>
-    /// Abstract class containing common API methods and properties to retreive an access token. All authentication providers extend this class
+    /// Abstract class containing common API methods and properties to retrieve an access token. All authentication providers extend this class
     /// </summary>
     public abstract class MsalAuthenticationBase
     {

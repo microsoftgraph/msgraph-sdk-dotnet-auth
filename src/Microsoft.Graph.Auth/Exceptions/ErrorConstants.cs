@@ -13,6 +13,7 @@ namespace Microsoft.Graph.Auth
             internal const string InvalidClaim = "invalidClaim";
             internal const string InvalidRequest = "invalidRequest";
             internal const string GeneralException = "generalException";
+            internal const string InvalidJWT = "InvalidJWT";
         }
 
         internal static class Message
@@ -23,6 +24,7 @@ namespace Microsoft.Graph.Auth
             internal const string NullValue = "{0} cannot be null.";
             internal static string UnexpectedMsalException = "Unexpected exception returned from MSAL.";
             internal static string UnexpectedException = "Unexpected exception occured while authenticating the request.";
+            internal const string InvalidJWT = "Invalid JWT access token.";
         }
     }
 }
