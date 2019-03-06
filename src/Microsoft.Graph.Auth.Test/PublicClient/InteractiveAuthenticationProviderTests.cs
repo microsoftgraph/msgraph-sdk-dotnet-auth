@@ -88,7 +88,7 @@
                         typeof(AuthenticationHandlerOption).ToString(),
                         new AuthenticationHandlerOption
                         {
-                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
                             {
                                 UserAssertion =  assertion
                             }
@@ -122,7 +122,7 @@
                         typeof(AuthenticationHandlerOption).ToString(),
                         new AuthenticationHandlerOption
                         {
-                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
                             {
                                 UserAssertion =  assertion,
                                 UserAccount = _graphUserAccount

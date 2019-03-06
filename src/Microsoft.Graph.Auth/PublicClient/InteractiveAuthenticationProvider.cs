@@ -76,7 +76,7 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             IAccount account = new GraphAccount(msalAuthProviderOption.UserAccount);
             AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(msalAuthProviderOption);
 

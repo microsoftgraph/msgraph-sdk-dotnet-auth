@@ -6,7 +6,7 @@ namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
 
-    public class MsalAuthProviderOption : IAuthenticationProviderOption
+    public class MsalAuthenticationProviderOption : IAuthenticationProviderOption
     {
         public string[] Scopes { get ; set ; }
         public bool ForceRefresh { get; set; }

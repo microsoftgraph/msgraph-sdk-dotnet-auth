@@ -20,7 +20,7 @@ namespace Microsoft.Graph.Auth
         {
             string authHandlerOptionKey = typeof(AuthenticationHandlerOption).ToString();
             AuthenticationHandlerOption authHandlerOptions = baseRequest.MiddlewareOptions[authHandlerOptionKey] as AuthenticationHandlerOption;
-            MsalAuthProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthProviderOption ?? new MsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthenticationProviderOption ?? new MsalAuthenticationProviderOption();
 
             msalAuthProviderOption.Scopes = scopes;
 
@@ -40,7 +40,7 @@ namespace Microsoft.Graph.Auth
         {
             string authHandlerOptionKey = typeof(AuthenticationHandlerOption).ToString();
             AuthenticationHandlerOption authHandlerOptions = baseRequest.MiddlewareOptions[authHandlerOptionKey] as AuthenticationHandlerOption;
-            MsalAuthProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthProviderOption ?? new MsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthenticationProviderOption ?? new MsalAuthenticationProviderOption();
 
             msalAuthProviderOption.ForceRefresh = forceRefresh;
 
@@ -61,7 +61,7 @@ namespace Microsoft.Graph.Auth
         {
             string authHandlerOptionKey = typeof(AuthenticationHandlerOption).ToString();
             AuthenticationHandlerOption authHandlerOptions = baseRequest.MiddlewareOptions[authHandlerOptionKey] as AuthenticationHandlerOption;
-            MsalAuthProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthProviderOption ?? new MsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthenticationProviderOption ?? new MsalAuthenticationProviderOption();
 
             msalAuthProviderOption.UserAccount = userAccount;
 
@@ -81,7 +81,7 @@ namespace Microsoft.Graph.Auth
         {
             string authHandlerOptionKey = typeof(AuthenticationHandlerOption).ToString();
             AuthenticationHandlerOption authHandlerOptions = baseRequest.MiddlewareOptions[authHandlerOptionKey] as AuthenticationHandlerOption;
-            MsalAuthProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthProviderOption ?? new MsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthenticationProviderOption ?? new MsalAuthenticationProviderOption();
 
             msalAuthProviderOption.UserAssertion = userAssertion;
 
@@ -102,7 +102,7 @@ namespace Microsoft.Graph.Auth
         {
             string authHandlerOptionKey = typeof(AuthenticationHandlerOption).ToString();
             AuthenticationHandlerOption authHandlerOptions = baseRequest.MiddlewareOptions[authHandlerOptionKey] as AuthenticationHandlerOption;
-            MsalAuthProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthProviderOption ?? new MsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = authHandlerOptions.AuthenticationProviderOption as MsalAuthenticationProviderOption ?? new MsalAuthenticationProviderOption();
 
             msalAuthProviderOption.Password = password;
             msalAuthProviderOption.UserAccount = new GraphUserAccount { Email = email };

@@ -102,7 +102,7 @@
                         typeof(AuthenticationHandlerOption).ToString(),
                         new AuthenticationHandlerOption
                         {
-                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
                             {
                                 UserAccount = _graphUserAccount
                             }

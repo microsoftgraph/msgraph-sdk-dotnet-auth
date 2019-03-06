@@ -87,7 +87,7 @@
     <Compile Include="ConfidentialClient\AuthorizationCodeProviderTests.cs" />
     <Compile Include="ConfidentialClient\OnBehalfOfProviderTests.cs" />
     <Compile Include="ConfidentialClient\ClientCredentialProviderTests.cs" />
-    <Compile Include="Extensions\AuthenticationProviderExtensions.cs" />
+    <Compile Include="Extensions\AuthenticationProviderExtensionsTests.cs" />
     <Compile Include="Extensions\BaseRequestExtensionsTests.cs" />
     <Compile Include="Extensions\ClaimsPrincipalExtensionsTests.cs" />
     <Compile Include="Helpers\JwtHelpersTests.cs" />

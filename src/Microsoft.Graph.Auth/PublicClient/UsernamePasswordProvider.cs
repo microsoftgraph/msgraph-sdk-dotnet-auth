@@ -61,7 +61,7 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
@@ -73,7 +73,7 @@ namespace Microsoft.Graph.Auth
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthProviderOption msalAuthProviderOption)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;

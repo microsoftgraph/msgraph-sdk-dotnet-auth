@@ -30,7 +30,7 @@ namespace Microsoft.Graph.Auth.Test.Extensions
             baseRequest.WithScopes(scopes);
 
             var httpRequestMessage = baseRequest.GetHttpRequestMessage();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
 
             Assert.IsNotNull(msalAuthProviderOption);
             Assert.AreSame(scopes, msalAuthProviderOption.Scopes);
@@ -44,7 +44,7 @@ namespace Microsoft.Graph.Auth.Test.Extensions
             baseRequest.WithForceRefresh(true);
 
             var httpRequestMessage = baseRequest.GetHttpRequestMessage();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
 
             Assert.IsNotNull(msalAuthProviderOption);
             Assert.IsTrue(msalAuthProviderOption.ForceRefresh);
@@ -64,7 +64,7 @@ namespace Microsoft.Graph.Auth.Test.Extensions
             baseRequest.WithUserAccount(graphUser);
 
             var httpRequestMessage = baseRequest.GetHttpRequestMessage();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
 
             Assert.IsNotNull(msalAuthProviderOption);
             Assert.AreSame(graphUser, msalAuthProviderOption.UserAccount);
@@ -81,7 +81,7 @@ namespace Microsoft.Graph.Auth.Test.Extensions
             baseRequest.WithUserAssertion(userAssertion);
 
             var httpRequestMessage = baseRequest.GetHttpRequestMessage();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
 
             Assert.IsNotNull(msalAuthProviderOption);
             Assert.AreSame(userAssertion, msalAuthProviderOption.UserAssertion);
@@ -98,7 +98,7 @@ namespace Microsoft.Graph.Auth.Test.Extensions
             baseRequest.WithUsernamePassword(email, password);
 
             var httpRequestMessage = baseRequest.GetHttpRequestMessage();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
 
             Assert.IsNotNull(msalAuthProviderOption);
             Assert.AreEqual(email, msalAuthProviderOption.UserAccount.Email);

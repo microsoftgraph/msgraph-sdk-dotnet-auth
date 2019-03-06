@@ -69,7 +69,7 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)

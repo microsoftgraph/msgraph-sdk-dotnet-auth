@@ -91,7 +91,7 @@
                         typeof(AuthenticationHandlerOption).ToString(),
                         new AuthenticationHandlerOption
                         {
-                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
                             {
                                 UserAssertion =  null
                             }
@@ -125,7 +125,7 @@
                         typeof(AuthenticationHandlerOption).ToString(),
                         new AuthenticationHandlerOption
                         {
-                            AuthenticationProviderOption = new MsalAuthProviderOption
+                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
                             {
                                 UserAssertion =  assertion
                             }
