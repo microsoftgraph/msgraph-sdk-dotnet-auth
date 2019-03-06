@@ -43,7 +43,7 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
         [TestMethod]
         public void ClientCredentialProvider_ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
         {
-            GraphAuthException ex = Assert.ThrowsException<GraphAuthException>(() => new ClientCredentialProvider(null));
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new ClientCredentialProvider(null));
 
             Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
             Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"), "Invalid exception message.");

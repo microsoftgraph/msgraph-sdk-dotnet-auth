@@ -13,6 +13,17 @@ namespace Microsoft.Graph.Auth
             public const string Organizations = "organizations";
             public const string Consumers = "consumers";
         }
+        internal static class ClaimTypes
+        {
+            public const string ObjectIdUriSchema = "http://schemas.microsoft.com/identity/claims/objectidentifier";
+            public const string ObjectIdJwt = "oid";
+
+            public const string TenantIdUriSchema = "http://schemas.microsoft.com/identity/claims/tenantid";
+            public const string TenantIdJwt = "tid";
+
+            public const string EmailUriSchema = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress";
+            public const string EmailJwt = "preferred_username";
+        }
 
         internal static Dictionary<NationalCloud, string> CloudList = new Dictionary<NationalCloud, string>
         {

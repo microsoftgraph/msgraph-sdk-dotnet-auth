@@ -7,9 +7,7 @@ namespace Microsoft.Graph.Auth
     using Microsoft.Identity.Client;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
     using System.Threading.Tasks;
-    using System.Net.Http.Headers;
     using System;
 
     /// <summary>
@@ -50,6 +48,7 @@ namespace Microsoft.Graph.Auth
 
             if(msalAuthProviderOption.UserAccount?.ObjectId != null)
             {
+                // Parse GraphUserAccount to IAccount instance
                 account = new GraphAccount(msalAuthProviderOption.UserAccount);
             }
             else
@@ -76,7 +75,7 @@ namespace Microsoft.Graph.Auth
             }
             catch (MsalServiceException serviceException)
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                         new Error
                         {
                             Code = ErrorConstants.Codes.GeneralException,
@@ -86,7 +85,7 @@ namespace Microsoft.Graph.Auth
             }
             catch (Exception exception)
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                         new Error
                         {
                             Code = ErrorConstants.Codes.GeneralException,

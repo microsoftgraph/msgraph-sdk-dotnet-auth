@@ -25,7 +25,7 @@ namespace Microsoft.Graph.Auth
         public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
             : base(null)
         {
-            ClientApplication = confidentialClientApplication ?? throw new GraphAuthException(
+            ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
@@ -83,7 +83,7 @@ namespace Microsoft.Graph.Auth
                     }
                     else
                     {
-                        throw new GraphAuthException(
+                        throw new AuthenticationException(
                             new Error
                             {
                                 Code = ErrorConstants.Codes.GeneralException,
@@ -94,7 +94,7 @@ namespace Microsoft.Graph.Auth
                 }
                 catch(Exception exception)
                 {
-                    throw new GraphAuthException(
+                    throw new AuthenticationException(
                             new Error
                             {
                                 Code = ErrorConstants.Codes.GeneralException,

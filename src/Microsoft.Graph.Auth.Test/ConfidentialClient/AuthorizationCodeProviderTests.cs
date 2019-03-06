@@ -50,7 +50,7 @@
         [TestMethod]
         public void AuthorizationCodeProvider_ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
         {
-            GraphAuthException ex = Assert.ThrowsException<GraphAuthException>(() => new AuthorizationCodeProvider(null, _scopes));
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new AuthorizationCodeProvider(null, _scopes));
 
             Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
             Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"), "Invalid exception message.");
@@ -83,7 +83,7 @@
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             AuthorizationCodeProvider authCodeFlowProvider = new AuthorizationCodeProvider(_mockClientApplicationBase.Object, _scopes);
 
-            GraphAuthException ex = await Assert.ThrowsExceptionAsync<GraphAuthException>(async () => await authCodeFlowProvider.AuthenticateRequestAsync(httpRequestMessage));
+            AuthenticationException ex = await Assert.ThrowsExceptionAsync<AuthenticationException>(async () => await authCodeFlowProvider.AuthenticateRequestAsync(httpRequestMessage));
 
             Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.AuthenticationChallengeRequired, "Invalid exception message.");
             Assert.IsInstanceOfType(authCodeFlowProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");

@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Graph.Auth
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
+
+namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
     internal class GraphAccount : IAccount

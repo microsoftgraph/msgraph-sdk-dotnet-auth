@@ -26,7 +26,7 @@ namespace Microsoft.Graph.Auth
            string[] scopes)
            : base(scopes)
         {
-            ClientApplication = publicClientApplication ?? throw new GraphAuthException(
+            ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
@@ -98,7 +98,7 @@ namespace Microsoft.Graph.Auth
                     }
                     else
                     {
-                        throw new GraphAuthException(
+                        throw new AuthenticationException(
                             new Error
                             {
                                 Code = ErrorConstants.Codes.GeneralException,
@@ -109,7 +109,7 @@ namespace Microsoft.Graph.Auth
                 }
                 catch (Exception exception)
                 {
-                    throw new GraphAuthException(
+                    throw new AuthenticationException(
                             new Error
                             {
                                 Code = ErrorConstants.Codes.GeneralException,

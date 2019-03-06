@@ -25,7 +25,7 @@ namespace Microsoft.Graph.Auth
             string[] scopes)
             : base(scopes)
         {
-            ClientApplication = confidentialClientApplication ?? throw new GraphAuthException(
+            ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
@@ -59,7 +59,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token.
-        /// If an access token doesn't exist, it will throw a <see cref="GraphAuthException"/>
+        /// If an access token doesn't exist, it will throw a <see cref="AuthenticationException"/>
         /// and the web app must handle this and perform a challange.
         /// </summary>
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
@@ -70,7 +70,7 @@ namespace Microsoft.Graph.Auth
 
             if (string.IsNullOrEmpty(authenticationResult?.AccessToken))
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.AuthenticationChallengeRequired,

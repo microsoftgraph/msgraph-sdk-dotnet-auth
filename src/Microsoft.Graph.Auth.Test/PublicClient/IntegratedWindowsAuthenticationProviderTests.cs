@@ -48,7 +48,7 @@
         [TestMethod]
         public void IntegratedWindows_ConstructorShouldThrowExceptionWithNullPublicClientApp()
         {
-            GraphAuthException ex = Assert.ThrowsException<GraphAuthException>(() => new IntegratedWindowsAuthenticationProvider(null, _scopes));
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new IntegratedWindowsAuthenticationProvider(null, _scopes));
 
             Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
             Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "publicClientApplication"), "Invalid exception message.");

@@ -13,7 +13,7 @@ namespace Microsoft.Graph.Auth.Helpers
             string cloudUrl = string.Empty;
             if (!AuthConstants.CloudList.TryGetValue(nationalCloud, out cloudUrl))
             {
-                throw new ArgumentException($" {nationalCloud} is an unexpected national cloud type");
+                throw new ArgumentException($"{nationalCloud} is an unexpected national cloud type");
             }
 
             return string.Format(CultureInfo.InvariantCulture, cloudUrl, tenant);

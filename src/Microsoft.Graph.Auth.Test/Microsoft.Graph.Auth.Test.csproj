@@ -87,6 +87,11 @@
     <Compile Include="ConfidentialClient\AuthorizationCodeProviderTests.cs" />
     <Compile Include="ConfidentialClient\OnBehalfOfProviderTests.cs" />
     <Compile Include="ConfidentialClient\ClientCredentialProviderTests.cs" />
+    <Compile Include="Extensions\AuthenticationProviderExtensions.cs" />
+    <Compile Include="Extensions\BaseRequestExtensionsTests.cs" />
+    <Compile Include="Extensions\ClaimsPrincipalExtensionsTests.cs" />
+    <Compile Include="Helpers\JwtHelpersTests.cs" />
+    <Compile Include="Helpers\NationalCloudHelpersTests.cs" />
     <Compile Include="Mocks\MockAuthResult.cs" />
     <Compile Include="Mocks\MockClientApplicationBase.cs" />
     <Compile Include="Mocks\MockUserAccount.cs" />
@@ -106,9 +111,7 @@
       <Name>Microsoft.Graph.Auth</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Extensions\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

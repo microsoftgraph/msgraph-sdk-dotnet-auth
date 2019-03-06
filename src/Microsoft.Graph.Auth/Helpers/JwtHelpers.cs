@@ -12,21 +12,22 @@ namespace Microsoft.Graph.Auth.Helpers
     {
         internal static string Decode(string jwToken)
         {
-            var output = jwToken;
-            output = output.Replace('-', '+');
-            output = output.Replace('_', '/');
-            switch (output.Length % 4) // Handle pad chars
+            // clean token chars
+            string cleanToken = jwToken;
+            cleanToken = cleanToken.Replace('-', '+');
+            cleanToken = cleanToken.Replace('_', '/');
+            switch (cleanToken.Length % 4) // Handle pad chars
             {
                 case 0:
                     break;
                 case 2:
-                    output += "==";
+                    cleanToken += "==";
                     break;
                 case 3:
-                    output += "=";
+                    cleanToken += "=";
                     break;
                 default:
-                    throw new GraphAuthException(
+                    throw new AuthenticationException(
                         new Error
                         {
                             Code = ErrorConstants.Codes.InvalidJWT,
@@ -34,7 +35,7 @@ namespace Microsoft.Graph.Auth.Helpers
                         });
             }
 
-            return Encoding.UTF8.GetString(Convert.FromBase64String(output));
+            return Encoding.UTF8.GetString(Convert.FromBase64String(cleanToken));
         }
 
         internal static T DecodeToObject<T>(string jwtString)
@@ -45,7 +46,7 @@ namespace Microsoft.Graph.Auth.Helpers
             }
             catch (Exception ex)
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                         new Error
                         {
                             Code = ErrorConstants.Codes.InvalidJWT,

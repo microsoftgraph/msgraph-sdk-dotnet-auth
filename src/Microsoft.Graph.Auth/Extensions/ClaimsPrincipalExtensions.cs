@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Graph.Auth
+﻿// ------------------------------------------------------------------------------
+//  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
+// ------------------------------------------------------------------------------
+
+namespace Microsoft.Graph.Auth
 {
     using System.Security.Claims;
     public static class ClaimsPrincipalExtensions
@@ -7,7 +11,7 @@
         {
             if (claimsPrincipal == null)
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
@@ -16,43 +20,43 @@
             }
 
             // Build GraphUserAccount from claims
-            string objectId = claimsPrincipal.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier")?.Value;
+            string objectId = claimsPrincipal.FindFirst(AuthConstants.ClaimTypes.ObjectIdUriSchema)?.Value;
             if (string.IsNullOrEmpty(objectId))
             {
-                objectId = claimsPrincipal.FindFirst("oid")?.Value;
+                objectId = claimsPrincipal.FindFirst(AuthConstants.ClaimTypes.ObjectIdJwt)?.Value;
             }
 
             if (string.IsNullOrEmpty(objectId))
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidClaim,
-                        Message = string.Format(ErrorConstants.Message.MissingClaim, "http://schemas.microsoft.com/identity/claims/objectidentifier")
+                        Message = string.Format(ErrorConstants.Message.MissingClaim, AuthConstants.ClaimTypes.ObjectIdUriSchema)
                     });
             }
                 
 
-            string tenentId = claimsPrincipal.FindFirst("http://schemas.microsoft.com/identity/claims/tenantid")?.Value;
+            string tenentId = claimsPrincipal.FindFirst(AuthConstants.ClaimTypes.TenantIdUriSchema)?.Value;
             if (string.IsNullOrEmpty(tenentId))
             {
-                tenentId = claimsPrincipal.FindFirst("tid")?.Value;
+                tenentId = claimsPrincipal.FindFirst(AuthConstants.ClaimTypes.TenantIdJwt)?.Value;
             }
 
             if (string.IsNullOrEmpty(tenentId))
             {
-                throw new GraphAuthException(
+                throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidClaim,
-                        Message = string.Format(ErrorConstants.Message.MissingClaim, "http://schemas.microsoft.com/identity/claims/tenantid")
+                        Message = string.Format(ErrorConstants.Message.MissingClaim, AuthConstants.ClaimTypes.TenantIdUriSchema)
                     });
             }
 
-            string email = claimsPrincipal.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value;
+            string email = claimsPrincipal.FindFirst(AuthConstants.ClaimTypes.EmailUriSchema)?.Value;
             if (string.IsNullOrEmpty(email))
             {
-                email = claimsPrincipal.FindFirst("preferred_username")?.Value;
+                email = claimsPrincipal.FindFirst(AuthConstants.ClaimTypes.EmailJwt)?.Value;
             }
 
             return new GraphUserAccount() { Email = email, ObjectId = objectId, TenantId = tenentId };
