@@ -1,4 +1,4 @@
-# Microsoft Graph .NET Authenttication Provider Library
+# Microsoft Graph .NET Authentication Provider Library
 Get started with Microsoft Graph .NET Authentication Provider Library by integrating Microsoft Graph API into your .Net application.
 
 Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 2.7.1](https://www.nuget.org/packages/Microsoft.Identity.Client/2.7.1).
