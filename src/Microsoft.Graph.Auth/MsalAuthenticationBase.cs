@@ -40,7 +40,7 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Attempts to acquire access token form the token cache silently by calling AcquireTokenSilentAsync
+        /// Attempts to acquire access token from the token cache silently by calling AcquireTokenSilentAsync
         /// </summary>
         internal async Task<AuthenticationResult> GetAccessTokenSilentAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
         {
