@@ -30,6 +30,7 @@ It uses [MSALs Authorization Code](https://github.com/AzureAD/microsoft-authenti
 
 ```csharp
 ConfidentialClientApplication clientApplication = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+
 AuthorizationCodeProvider authenticationProvider = new AuthorizationCodeProvider(clientApplication, scopes);
 ```
 
@@ -39,6 +40,7 @@ This provider leverages on [MSALs Client Credential Flows](https://github.com/Az
 
 ```csharp
 ConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+
 ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(clientApplication);
 ```
 
@@ -48,6 +50,7 @@ This provider uses [MSALs On Behalf Of](https://github.com/AzureAD/microsoft-aut
 
 ```csharp
 ConfidentialClientApplication clientApplication = OnBehalfOfProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+
 OnBehalfOfProvider authenticationProvider = new OnBehalfOfProvider(clientApplication, scopes);
 ```
 
@@ -60,6 +63,7 @@ This provider leverages [MSALs Device Code Flow](https://github.com/AzureAD/micr
 
 ```csharp
 PublicClientApplication clientApplication = DeviceCodeProvider.CreateClientApplication(clientId);
+
 DeviceCodeProvider authenticationProvider = new DeviceCodeProvider(clientApplication, scopes);
 ```
 
@@ -69,6 +73,7 @@ This provider leverages [MSALs Integrated Windows Authentication](https://github
 
 ```csharp
 PublicClientApplication clientApplication = IntegratedWindowsAuthenticationProvider.CreateClientApplication(clientId);
+
 IntegratedWindowsAuthenticationProvider authenticationProvider = new IntegratedWindowsAuthenticationProvider(clientApplication, scopes);
 ```
 
@@ -78,6 +83,7 @@ Refer to [MSALs interactive Authentication](https://github.com/AzureAD/microsoft
 
 ```csharp
 PublicClientApplication clientApplication = InteractiveAuthenticationProvider.CreateClientApplication(clientId);
+
 InteractiveAuthenticationProvider authenticationProvider = new InteractiveAuthenticationProvider(clientApplication, scopes);
 ```
 
@@ -86,6 +92,7 @@ This provider is used by desktop applications to acquire Microsoft Graph access 
 
 ```csharp
 PublicClientApplication clientApplication = UsernamePasswordProvider.CreateClientApplication(clientId);
+
 UsernamePasswordProvider authenticationProvider = new UsernamePasswordProvider(clientApplication, scopes);
 ```
 
@@ -101,6 +108,7 @@ For example, to retrieve a user's default drive:
 
 ```csharp
 GraphServiceClient graphServiceClient = new GraphServiceClient(authenticationProvider);
+
 var drive = await graphServiceClient.Me.Drive.Request().GetAsync();
 ```
 
@@ -108,9 +116,13 @@ var drive = await graphServiceClient.Me.Drive.Request().GetAsync();
 ## 1. Client credential provider
 
 ```csharp
+// Create client application.
 ConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+// Create authentication provider.
 ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(clientApplication);
+// Configure GraphServiceClient with provider.
 GraphServiceClient graphServiceClient = new GraphServiceClient(authenticationProvider);
+// Make a request
 var me = await graphServiceClient.Me.Request().WithForceRefresh(true).GetAsync();
 ```
 
