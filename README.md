@@ -1,5 +1,6 @@
 # Microsoft Graph .NET Authenttication Provider Library
 Get started with Microsoft Graph .NET Authentication Provider Library by integrating Microsoft Graph API into your .Net application.
+
 Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 2.7.1](https://www.nuget.org/packages/Microsoft.Identity.Client/2.7.1).
 # Installation via NuGet
 To install the authentication provider library via Nuget:
@@ -115,11 +116,13 @@ var me = await graphServiceClient.Me.Request().WithForceRefresh(true).GetAsync()
 
 # Documentation
 * MSAL .Net [authentication scenarios](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/scenarios).
+* For documentations on the provider arguments, refer to [MSAL documentation](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Scenarios#public-client-and-confidential-client-applications).
 
 # Issues
-To view or log Microsoft Graph Authentication library issues, see [issues](https://github.com/microsoftgraph/msgraph-sdk-dotnet-auth/issues).
 To view or log [MSAL.Net](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki) issues, see [issues](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/issues).
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+To view or log Microsoft Graph Authentication library issues, see [issues](https://github.com/microsoftgraph/msgraph-sdk-dotnet-auth/issues).
 
 # Additional resources
 * NuGet Package: [https://www.nuget.org/packages/Microsoft.Graph.Auth](https://www.nuget.org/packages/Microsoft.Graph.Auth)
