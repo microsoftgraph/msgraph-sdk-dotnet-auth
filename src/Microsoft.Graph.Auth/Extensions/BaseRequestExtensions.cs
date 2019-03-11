@@ -94,6 +94,8 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Sets a username (email) and password of an Azure AD account to authenticate.
         /// This should only be used with <see cref="UsernamePasswordProvider"/>.
+        /// This provider is NOT RECOMMENDED because it exposes the users password.
+        /// We recommend you use <see cref="IntegratedWindowsAuthenticationProvider"/> instead.
         /// </summary>
         /// <param name="baseRequest">The <see cref="IBaseRequest"/>.</param>
         /// <param name="email">Email address of the user to authenticate.</param>

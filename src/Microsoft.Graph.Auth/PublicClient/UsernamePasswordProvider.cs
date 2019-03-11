@@ -18,7 +18,8 @@ namespace Microsoft.Graph.Auth
     public class UsernamePasswordProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
         /// <summary>
-        /// Constructs a new <see cref="UsernamePasswordProvider"/>
+        /// Constructs a new <see cref="UsernamePasswordProvider"/>. This provider is NOT RECOMMENDED because it exposes the users password.
+        /// We recommend you use <see cref="IntegratedWindowsAuthenticationProvider"/> instead.
         /// </summary>
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access a protected API.</param>
