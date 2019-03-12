@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Microsoft Graph Authentication Library implements authentication functionality used by Microsoft Graph Client Libraries. It provides a set of OAuth scenario-centric providers that implement Microsoft.Graph.IAuthenticationProvider and uses Microsoft Authentication Library (MSAL) to handle access token acquisition and storage.</Description>
+    <Copyright>Copyright © Microsoft Corporation.</Copyright>
+    <AssemblyTitle>Microsoft Graph Auth Library</AssemblyTitle>
+    <AssemblyVersion>0.1.0</AssemblyVersion>
+    <Authors>Microsoft</Authors>
+    <Company>Microsoft Corporation</Company>
+    <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
+    <AssemblyName>Microsoft.Graph.Auth</AssemblyName>
+    <PackageId>Microsoft.Graph.Auth</PackageId>
+    <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK</PackageTags>
+    <PackageReleaseNotes>
+Release Summary
+
+New functionality
+- Adds authentication providers that implement IAuthenticationProvider.
+- Adds authentication provider options which are used to set provider specific requests options.
+- Adds BaseRequest extensions methods to set authentication provider options.
+- Adds ITokenStorageProvider interface that's used to create token cache storage provider.
+
+    </PackageReleaseNotes>
+    <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
+    <PackageLicenseUrl>http://aka.ms/devservicesagreement</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <SignAssembly>false</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <!--Skip 1.13.0-->
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>preview</VersionSuffix>
+    <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Graph.Core" Version="1.14.0-preview" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="2.7.1" />
+    <PackageReference Include="System.Security.Principal" Version="4.3.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <PackageReference Include="System.Security.Claims">
+      <Version>4.3.0</Version>
+    </PackageReference>
+  </ItemGroup>
+</Project>
