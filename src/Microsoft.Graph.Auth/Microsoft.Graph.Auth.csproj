@@ -23,6 +23,7 @@ New functionality
     <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
     <PackageLicenseUrl>http://aka.ms/devservicesagreement</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <SignAssembly>false</SignAssembly>
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
