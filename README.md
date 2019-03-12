@@ -1,4 +1,6 @@
 # Microsoft Graph .NET Authentication Provider Library
+Microsoft Graph .NET authentication library provides a set of OAuth scenario-centric authentication providers that implement `Microsoft.Graph.IAuthenticationProvider` and uses Microsoft Authentication Library (MSAL) under the hood to handle access token acquisition and storage. It also exposes `BaseRequest` extension methods that are used to set per request authentication options to the providers.
+
 Get started with Microsoft Graph .NET Authentication Provider Library by integrating Microsoft Graph API into your .Net application.
 
 Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 2.7.1](https://www.nuget.org/packages/Microsoft.Identity.Client/2.7.1).
@@ -128,7 +130,7 @@ var me = await graphServiceClient.Me.Request().WithForceRefresh(true).GetAsync()
 
 # Documentation
 * MSAL .Net [authentication scenarios](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/scenarios).
-* For documentations on the provider arguments, refer to [MSAL documentation](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Scenarios#public-client-and-confidential-client-applications).
+* For documentations on provider arguments, refer to [MSAL documentation](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Scenarios#public-client-and-confidential-client-applications).
 
 # Issues
 To view or log [MSAL.Net](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki) issues, see [issues](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/issues).
