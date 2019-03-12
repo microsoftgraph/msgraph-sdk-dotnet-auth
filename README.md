@@ -1,4 +1,6 @@
 # Microsoft Graph .NET Authentication Provider Library
+[![Build status](https://o365exchange.visualstudio.com/O365%20Sandbox/_apis/build/status/Microsoft%20Graph/PR-msgraph-validate-sdk-dotnet-auth)](https://o365exchange.visualstudio.com/O365%20Sandbox/_build/latest?definitionId=0)
+
 Microsoft Graph .NET authentication library provides a set of OAuth scenario-centric authentication providers that implement `Microsoft.Graph.IAuthenticationProvider` and uses Microsoft Authentication Library (MSAL) under the hood to handle access token acquisition and storage. It also exposes `BaseRequest` extension methods that are used to set per request authentication options to the providers.
 
 Get started with Microsoft Graph .NET Authentication Provider Library by integrating Microsoft Graph API into your .Net application.
