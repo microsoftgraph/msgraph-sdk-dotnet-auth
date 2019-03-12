@@ -33,7 +33,7 @@ Authorization code provider is used by Web Apps (ASP.NET & ASP.NET Core) to acqu
 It uses [MSALs Authorization Code](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to authenticate Microsoft Graph requests.
 
 ```csharp
-ConfidentialClientApplication clientApplication = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+IConfidentialClientApplication clientApplication = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
 
 AuthorizationCodeProvider authenticationProvider = new AuthorizationCodeProvider(clientApplication, scopes);
 ```
@@ -43,7 +43,7 @@ Client credential provider is used by services and desktop applications to acqui
 This provider leverages on [MSALs Client Credential Flows](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-credential-flows) to authenticate Microsoft Graph requests.
 
 ```csharp
-ConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+IConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
 
 ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(clientApplication);
 ```
@@ -53,7 +53,7 @@ As the name suggests, on behalf of provider is used by services or daemons to ac
 This provider uses [MSALs On Behalf Of](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/on-behalf-of) to authenticate Microsoft Graph requests.
 
 ```csharp
-ConfidentialClientApplication clientApplication = OnBehalfOfProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+IConfidentialClientApplication clientApplication = OnBehalfOfProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
 
 OnBehalfOfProvider authenticationProvider = new OnBehalfOfProvider(clientApplication, scopes);
 ```
@@ -66,7 +66,7 @@ Device code provider is used by desktop apps that run on devices without browser
 This provider leverages [MSALs Device Code Flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Device-Code-Flow) to authenticate Microsoft Graph requests.
 
 ```csharp
-PublicClientApplication clientApplication = DeviceCodeProvider.CreateClientApplication(clientId);
+IPublicClientApplication clientApplication = DeviceCodeProvider.CreateClientApplication(clientId);
 
 DeviceCodeProvider authenticationProvider = new DeviceCodeProvider(clientApplication, scopes);
 ```
@@ -76,7 +76,7 @@ This provider is used by Windows hosted .NET applications running on computers j
 This provider leverages [MSALs Integrated Windows Authentication](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Integrated-Windows-Authentication) to authenticate Microsoft Graph requests.
 
 ```csharp
-PublicClientApplication clientApplication = IntegratedWindowsAuthenticationProvider.CreateClientApplication(clientId);
+IPublicClientApplication clientApplication = IntegratedWindowsAuthenticationProvider.CreateClientApplication(clientId);
 
 IntegratedWindowsAuthenticationProvider authenticationProvider = new IntegratedWindowsAuthenticationProvider(clientApplication, scopes);
 ```
@@ -86,7 +86,7 @@ Interactive authentication provider is used by mobile applications (Xamarin and 
 Refer to [MSALs interactive Authentication](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-interactively) on how to configure the provider for your platform of choice since each platform has its own specificities.
 
 ```csharp
-PublicClientApplication clientApplication = InteractiveAuthenticationProvider.CreateClientApplication(clientId);
+IPublicClientApplication clientApplication = InteractiveAuthenticationProvider.CreateClientApplication(clientId);
 
 InteractiveAuthenticationProvider authenticationProvider = new InteractiveAuthenticationProvider(clientApplication, scopes);
 ```
@@ -95,7 +95,7 @@ InteractiveAuthenticationProvider authenticationProvider = new InteractiveAuthen
 This provider is used by desktop applications to acquire Microsoft Graph access token by leveraging [MSALs Username Password](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Username-Password-Authentication) with the provider username (email) and password.
 
 ```csharp
-PublicClientApplication clientApplication = UsernamePasswordProvider.CreateClientApplication(clientId);
+IPublicClientApplication clientApplication = UsernamePasswordProvider.CreateClientApplication(clientId);
 
 UsernamePasswordProvider authenticationProvider = new UsernamePasswordProvider(clientApplication, scopes);
 ```
