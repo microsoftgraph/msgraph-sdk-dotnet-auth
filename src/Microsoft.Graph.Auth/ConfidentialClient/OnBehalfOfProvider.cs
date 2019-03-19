@@ -21,10 +21,10 @@ namespace Microsoft.Graph.Auth
         /// Constructs a new <see cref="OnBehalfOfProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="OnBehalfOfProvider"/> for authentication.</param>
-        /// <param name="scopes">Scopes required to access Microsoft graph.</param>
+        /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         public OnBehalfOfProvider(
             IConfidentialClientApplication confidentialClientApplication,
-            string[] scopes)
+            string[] scopes = null)
             : base(scopes)
         {
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(

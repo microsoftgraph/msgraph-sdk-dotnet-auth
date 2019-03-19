@@ -33,10 +33,15 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="MsalAuthenticationBase"/>
         /// </summary>
-        /// <param name="scopes">Scopes requested to access a protected API</param>
-        public MsalAuthenticationBase(string[] scopes)
+        /// <param name="graphScopes">Scopes requested to access a protected API</param>
+        public MsalAuthenticationBase(string[] graphScopes = null)
         {
-            Scopes = scopes;
+            Scopes = graphScopes ?? new string[] { AuthConstants.DefaultScopeUrl };
+
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes}, new ArgumentException());
+            }
         }
 
         /// <summary>

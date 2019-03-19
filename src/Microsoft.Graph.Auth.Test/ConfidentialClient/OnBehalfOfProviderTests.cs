@@ -80,6 +80,25 @@
         }
 
         [TestMethod]
+        public void OnBehalfOfProvider_ShouldUseDefaultScopeUrlWhenScopeIsNull()
+        {
+            OnBehalfOfProvider onBehalfOfProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, null);
+
+            Assert.IsNotNull(onBehalfOfProvider.Scopes, "Default scope url not set.");
+            Assert.IsTrue(onBehalfOfProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
+            Assert.AreEqual(AuthConstants.DefaultScopeUrl, onBehalfOfProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
+        }
+
+        [TestMethod]
+        public void OnBehalfOfProvider_ShouldThrowExceptionWhenScopesAreEmpty()
+        {
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new OnBehalfOfProvider(_mockClientApplicationBase.Object, new string[] { }));
+
+            Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.EmptyScopes, "Invalid exception message.");
+            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
+        }
+
+        [TestMethod]
         public async Task OnBehalfOfProvider_ShouldGetNewAccessTokenWithNoUserAssertion()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");

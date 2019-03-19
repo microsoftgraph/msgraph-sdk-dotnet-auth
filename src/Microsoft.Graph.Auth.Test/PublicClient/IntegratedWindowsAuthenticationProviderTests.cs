@@ -76,6 +76,25 @@
         }
 
         [TestMethod]
+        public void IntegratedWindows_ShouldUseDefaultScopeUrlWhenScopeIsNull()
+        {
+            IntegratedWindowsAuthenticationProvider authProvider = new IntegratedWindowsAuthenticationProvider(_mockClientApplicationBase.Object, null);
+
+            Assert.IsNotNull(authProvider.Scopes, "Default scope url not set.");
+            Assert.IsTrue(authProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
+            Assert.AreEqual(AuthConstants.DefaultScopeUrl, authProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
+        }
+
+        [TestMethod]
+        public void IntegratedWindows_ShouldThrowExceptionWhenScopesAreEmpty()
+        {
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new IntegratedWindowsAuthenticationProvider(_mockClientApplicationBase.Object, new string[] { }));
+
+            Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.EmptyScopes, "Invalid exception message.");
+            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
+        }
+
+        [TestMethod]
         public async Task IntegratedWindows_ShouldGetNewAccessTokenWithNoIAccount()
         {
             UserAssertion assertion = new UserAssertion("access_token");

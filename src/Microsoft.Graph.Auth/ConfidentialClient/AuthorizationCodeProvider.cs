@@ -19,10 +19,10 @@ namespace Microsoft.Graph.Auth
         /// Construct a new <see cref="AuthorizationCodeProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication"><see cref="IConfidentialClientApplication"/> used to authentication requests.</param>
-        /// <param name="scopes">Scopes required to access Microsoft Graph.</param>
+        /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default if none is set.</param>
         public AuthorizationCodeProvider(
             IConfidentialClientApplication confidentialClientApplication,
-            string[] scopes)
+            string[] scopes = null)
             : base(scopes)
         {
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(

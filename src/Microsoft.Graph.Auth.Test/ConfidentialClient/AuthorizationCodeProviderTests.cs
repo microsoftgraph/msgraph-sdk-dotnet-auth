@@ -78,6 +78,25 @@
         }
 
         [TestMethod]
+        public void AuthorizationCodeProvider_ShouldUseDefaultScopeUrlWhenScopeIsNull()
+        {
+            AuthorizationCodeProvider authCodeFlowProvider = new AuthorizationCodeProvider(_mockClientApplicationBase.Object);
+
+            Assert.IsNotNull(authCodeFlowProvider.Scopes, "Default scope url not set.");
+            Assert.IsTrue(authCodeFlowProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
+            Assert.AreEqual(AuthConstants.DefaultScopeUrl, authCodeFlowProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
+        }
+
+        [TestMethod]
+        public void AuthorizationCodeProvider_ShouldThrowExceptionWhenScopesAreEmpty()
+        {
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new AuthorizationCodeProvider(_mockClientApplicationBase.Object, new string[] { }));
+
+            Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.EmptyScopes, "Invalid exception message.");
+            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
+        }
+
+        [TestMethod]
         public async Task AuthorizationCodeProvider_ShouldThrowChallangeRequiredExceptionWhenNoUserAccountIsNull()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");

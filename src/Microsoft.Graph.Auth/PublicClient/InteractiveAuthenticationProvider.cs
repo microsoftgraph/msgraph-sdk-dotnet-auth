@@ -30,12 +30,12 @@ namespace Microsoft.Graph.Auth
         /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
-        /// <param name="scopes">Scopes required to access a protected API.</param>
+        /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="uiBehavior">Designed interactive experience for the user. Defaults to <see cref="UIBehavior.SelectAccount"/>.</param>
         /// <param name="uiParent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
         public InteractiveAuthenticationProvider(
             IPublicClientApplication publicClientApplication,
-            string[] scopes,
+            string[] scopes = null,
             UIBehavior? uiBehavior = null,
             UIParent uiParent = null)
             : base(scopes)
