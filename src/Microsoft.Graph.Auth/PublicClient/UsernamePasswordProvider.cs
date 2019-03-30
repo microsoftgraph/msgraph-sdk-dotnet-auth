@@ -22,10 +22,10 @@ namespace Microsoft.Graph.Auth
         /// We recommend you use <see cref="IntegratedWindowsAuthenticationProvider"/> instead.
         /// </summary>
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
-        /// <param name="scopes">Scopes required to access a protected API.</param>
+        /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         public UsernamePasswordProvider(
             IPublicClientApplication publicClientApplication,
-            string[] scopes)
+            string[] scopes = null)
             : base(scopes)
         {
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(

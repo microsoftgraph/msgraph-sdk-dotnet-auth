@@ -77,6 +77,25 @@
         }
 
         [TestMethod]
+        public void DeviceCodeProvider_ShouldUseDefaultScopeUrlWhenScopeIsNull()
+        {
+            DeviceCodeProvider deviceCodeProvider = new DeviceCodeProvider(_mockClientApplicationBase.Object, null);
+
+            Assert.IsNotNull(deviceCodeProvider.Scopes, "Default scope url not set.");
+            Assert.IsTrue(deviceCodeProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
+            Assert.AreEqual(AuthConstants.DefaultScopeUrl, deviceCodeProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
+        }
+
+        [TestMethod]
+        public void DeviceCodeProvider_ShouldThrowExceptionWhenScopesAreEmpty()
+        {
+            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new DeviceCodeProvider(_mockClientApplicationBase.Object, new string[] { }));
+
+            Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.EmptyScopes, "Invalid exception message.");
+            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
+        }
+
+        [TestMethod]
         public async Task DeviceCodeProvider_ShouldGetNewAccessTokenWithNoIAccount()
         {
             UserAssertion assertion = new UserAssertion("access_token");

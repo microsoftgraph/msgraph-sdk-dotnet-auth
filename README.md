@@ -43,7 +43,7 @@ Client credential provider is used by services and desktop applications to acqui
 This provider leverages on [MSALs Client Credential Flows](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-credential-flows) to authenticate Microsoft Graph requests.
 
 ```csharp
-IConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+IConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, clientCredential);
 
 ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(clientApplication);
 ```

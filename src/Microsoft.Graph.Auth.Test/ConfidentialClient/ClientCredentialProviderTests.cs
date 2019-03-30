@@ -71,6 +71,16 @@ namespace Microsoft.Graph.Auth.Test.ConfidentialClient
         }
 
         [TestMethod]
+        public void ClientCredentialProvider_ShouldUseDefaultScopeUrlWhenScopeIsNull()
+        {
+            ClientCredentialProvider clientCredentialProvider = new ClientCredentialProvider(_mockClientApplicationBase.Object);
+
+            Assert.IsNotNull(clientCredentialProvider.Scopes, "Default scope url not set.");
+            Assert.IsTrue(clientCredentialProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
+            Assert.AreEqual(AuthConstants.DefaultScopeUrl, clientCredentialProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
+        }
+
+        [TestMethod]
         public async Task ClientCredentialProvider_ShouldGetNewAccessTokenWhenUserAccountIsNull()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");

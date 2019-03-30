@@ -16,8 +16,6 @@ namespace Microsoft.Graph.Auth
     /// </summary>
     public class ClientCredentialProvider : MsalAuthenticationBase, IAuthenticationProvider
     {
-        private const string _resourceUrl = "https://graph.microsoft.com/.default";
-
         /// <summary>
         /// Constructs a new <see cref=" ClientCredentialProvider"/>
         /// </summary>
@@ -66,7 +64,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    AuthenticationResult authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { _resourceUrl }, msalAuthProviderOption.ForceRefresh);
+                    AuthenticationResult authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { AuthConstants.DefaultScopeUrl }, msalAuthProviderOption.ForceRefresh);
 
                     if (!string.IsNullOrEmpty(authenticationResult?.AccessToken))
                         httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
