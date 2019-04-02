@@ -48,7 +48,7 @@ namespace Microsoft.Graph.Auth
         {
             TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
             string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new ConfidentialClientApplication(clientId, authority, string.Empty, clientCredential, null, tokenCacheProvider.GetTokenCacheInstnce());
+            return new ConfidentialClientApplication(clientId, authority, "https://replyUrl", clientCredential, null, tokenCacheProvider.GetTokenCacheInstnce());
         }
 
         /// <summary>
