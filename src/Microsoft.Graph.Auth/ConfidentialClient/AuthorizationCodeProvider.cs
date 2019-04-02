@@ -44,6 +44,7 @@ namespace Microsoft.Graph.Auth
         /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified.</param>
         /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
         /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
+        /// <exception cref="AuthenticationException"></exception>
         public static IConfidentialClientApplication CreateClientApplication(string clientId,
             string redirectUri,
             ClientCredential clientCredential,
@@ -51,6 +52,21 @@ namespace Microsoft.Graph.Auth
             string tenant = null,
             NationalCloud nationalCloud = NationalCloud.Global)
         {
+            if (string.IsNullOrEmpty(clientId))
+                throw new AuthenticationException(
+                    new Error
+                    {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
+                    });
+
+            if (string.IsNullOrEmpty(redirectUri))
+                throw new AuthenticationException(
+                    new Error {
+                        Code = ErrorConstants.Codes.InvalidRequest,
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(redirectUri))
+                    });
+
             TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
             string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
             return new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, tokenCacheProvider.GetTokenCacheInstnce(), null);
