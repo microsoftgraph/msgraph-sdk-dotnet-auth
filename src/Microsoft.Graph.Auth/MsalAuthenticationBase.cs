@@ -74,19 +74,9 @@ namespace Microsoft.Graph.Auth
                     ClientApplication.Authority,
                     msalAuthProviderOption.ForceRefresh);
             }
-            catch (MsalUiRequiredException msalUiEx)
+            catch (MsalException msalEx)
             {
                 return null;
-            }
-            catch (MsalServiceException serviceException)
-            {
-                throw new AuthenticationException(
-                        new Error
-                        {
-                            Code = ErrorConstants.Codes.GeneralException,
-                            Message = ErrorConstants.Message.UnexpectedMsalException
-                        },
-                        serviceException);
             }
             catch (Exception exception)
             {
