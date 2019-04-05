@@ -66,7 +66,7 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
-            msalAuthProviderOption.UserAccount = GetGraphUserAccount(msalAuthProviderOption.UserAssertion?.Assertion);
+            msalAuthProviderOption.UserAccount = GetGraphUserAccountFromJwt(msalAuthProviderOption.UserAssertion?.Assertion);
 
             AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
             if (authenticationResult == null)
@@ -74,6 +74,29 @@ namespace Microsoft.Graph.Auth
 
             if(!string.IsNullOrEmpty(authenticationResult.AccessToken))
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+        }
+
+        /// <summary>
+        /// Creats a <see cref="GraphUserAccount"/> object from a JWT access token.
+        /// </summary>
+        /// <param name="jwtAccessToken">JWT token to parse.</param>
+        /// <returns></returns>
+        internal GraphUserAccount GetGraphUserAccountFromJwt(string jwtAccessToken)
+        {
+            if (string.IsNullOrEmpty(jwtAccessToken))
+                return null;
+
+            // Get jwt payload
+            string[] jwtSegments = jwtAccessToken.Split('.');
+            string payloadSegmant = jwtSegments.Count() == 1 ? jwtSegments.First() : jwtSegments[1];
+
+            JwtPayload jwtPayload = JwtHelpers.DecodeToObject<JwtPayload>(payloadSegmant);
+            return new GraphUserAccount()
+            {
+                Email = jwtPayload.Upn,
+                ObjectId = jwtPayload.Oid.ToString(),
+                TenantId = jwtPayload.Tid.ToString()
+            };
         }
 
         private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
@@ -121,29 +144,6 @@ namespace Microsoft.Graph.Auth
             } while (retryCount < MaxRetry);
 
             return authenticationResult;
-        }
-
-        /// <summary>
-        /// Creats a <see cref="GraphUserAccount"/> object from a JWT access token.
-        /// </summary>
-        /// <param name="jwtAccessToken">JWT token to parse.</param>
-        /// <returns></returns>
-        private GraphUserAccount GetGraphUserAccount(string jwtAccessToken)
-        {
-            if (string.IsNullOrEmpty(jwtAccessToken))
-                return null;
-
-            // Get jwt payload
-            string[] jwtSegments = jwtAccessToken.Split('.');
-            string payloadSegmant = jwtSegments.Count() == 1 ? jwtSegments.First() : jwtSegments[1];
-
-            JwtPayload jwtPayload = JwtHelpers.DecodeToObject<JwtPayload>(payloadSegmant);
-            return new GraphUserAccount()
-            {
-                Email = jwtPayload.Upn,
-                ObjectId = jwtPayload.Oid.ToString(),
-                TenantId = jwtPayload.Tid.ToString()
-            };
         }
     }
 }
