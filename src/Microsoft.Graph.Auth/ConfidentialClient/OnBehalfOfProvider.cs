@@ -142,7 +142,7 @@ namespace Microsoft.Graph.Auth
             {
                 Email = jwtPayload.Upn,
                 ObjectId = jwtPayload.Oid.ToString(),
-                TenantId = jwtPayload.Oid.ToString()
+                TenantId = jwtPayload.Tid.ToString()
             };
         }
     }
