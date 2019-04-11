@@ -51,7 +51,9 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Creates a new <see cref="IPublicClientApplication"/>
+        /// Creates a new <see cref="IPublicClientApplication"/>.
+        /// On mobile platforms (UWP and Xamarin), a secure and performant storage mechanism is implemeted by MSAL and you shouldn't pass a <see cref="ITokenStorageProvider"/> implementation.
+        /// For more details about custom token cache serialization, visit https://aka.ms/msal-net-serialization.
         /// </summary>
         /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
         /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token.</param>
@@ -71,10 +73,11 @@ namespace Microsoft.Graph.Auth
                         Code = ErrorConstants.Codes.InvalidRequest,
                         Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
                     });
-
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
+            // MSAL has a guard against using token cache extension methods for mobile platforms (UWP and Xamarin) since it internally implements a secure token cache implementation.
+            // For more details about custom token cache serialization, visit https://aka.ms/msal-net-serialization.
+            TokenCache tokenCache = tokenStorageProvider == null ? new TokenCache() : new TokenCacheProvider(tokenStorageProvider).GetTokenCacheInstnce();
             string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
+            return new PublicClientApplication(clientId, authority, tokenCache);
         }
 
         /// <summary>
