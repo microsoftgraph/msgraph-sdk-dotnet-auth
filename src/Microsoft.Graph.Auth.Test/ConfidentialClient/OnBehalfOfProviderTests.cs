@@ -34,7 +34,6 @@
                 TenantId = Guid.NewGuid().ToString()
             };
             _silentAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount), _scopes);
-            
             _mockClientApplicationBase = new MockConfidentialClientApplication(_scopes, "common", false, _clientId, _silentAuthResult);
         }
 
@@ -159,6 +158,18 @@
             Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
             Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
             Assert.AreEqual(_silentAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
+        }
+
+        [TestMethod]
+        public void OnBehalfOfProvider_ShouldGetGraphUserAccountFromJwtString()
+        {
+            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
+            GraphUserAccount userAccount = authProvider.GetGraphUserAccountFromJwt(_jwtAccessToken);
+
+            Assert.IsNotNull(userAccount, "Unexpected graph user account.");
+            Assert.AreEqual(userAccount.ObjectId, "e602ada7-6efd-4e18-a979-63c02b9f3c76", "Unexpected oid set.");
+            Assert.AreEqual(userAccount.TenantId, "6bc15335-e2b8-4a9a-8683-a52a26c8c583", "Unexpected tid set.");
+            Assert.AreEqual(userAccount.Email, "john@doe.test.com", "Unexpected email set.");
         }
     }
 }
