@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Microsoft Graph Authentication Library implements authentication functionality used by Microsoft Graph Client Libraries. It provides a set of OAuth scenario-centric providers that implement Microsoft.Graph.IAuthenticationProvider and uses Microsoft Authentication Library (MSAL) to handle access token acquisition and storage.</Description>
+    <Description>Microsoft Graph Authentication Library implements authentication functionality used by Microsoft Graph Client Library. It provides a set of OAuth scenario-centric providers that implement Microsoft.Graph.IAuthenticationProvider and uses Microsoft Authentication Library (MSAL) to handle access token acquisition and storage.</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <AssemblyTitle>Microsoft Graph Auth Library</AssemblyTitle>
     <AssemblyVersion>0.1.0</AssemblyVersion>
@@ -9,16 +9,14 @@
     <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
     <AssemblyName>Microsoft.Graph.Auth</AssemblyName>
     <PackageId>Microsoft.Graph.Auth</PackageId>
-    <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK</PackageTags>
+    <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK;MSAL</PackageTags>
     <PackageReleaseNotes>
 Release Summary
 
-New functionality
-- Adds authentication providers that implement IAuthenticationProvider.
-- Adds authentication provider options which are used to set provider specific requests options.
-- Adds BaseRequest extensions methods to set authentication provider options.
-- Adds ITokenStorageProvider interface that's used to create token cache storage provider.
-
+- New feature - Adds default scope url support when no scope is provided.
+- Fix - Setting token cache on mobile platforms.
+- Fix - Empty redirect url exception when using confidential client provider.
+- Fix - User mismatch exception when using on behalf of provider.
     </PackageReleaseNotes>
     <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
     <PackageLicenseUrl>http://aka.ms/devservicesagreement</PackageLicenseUrl>
@@ -28,7 +26,7 @@ New functionality
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
     <VersionPrefix>0.1.0</VersionPrefix>
-    <VersionSuffix>preview</VersionSuffix>
+    <VersionSuffix>preview2</VersionSuffix>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
