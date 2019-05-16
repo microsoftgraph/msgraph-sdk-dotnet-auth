@@ -4,23 +4,24 @@
 
 namespace Microsoft.Graph.Auth
 {
-    using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
     using System;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by client credential flow.
     /// </summary>
-    public class ClientCredentialProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class ClientCredentialProvider : MsalAuthenticationBase<IConfidentialClientApplication>, IAuthenticationProvider
     {
         /// <summary>
         /// Constructs a new <see cref=" ClientCredentialProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="ClientCredentialProvider"/> for authentication.</param>
-        public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
+        public ClientCredentialProvider(
+            IConfidentialClientApplication confidentialClientApplication)
             : base(null)
         {
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
@@ -35,17 +36,46 @@ namespace Microsoft.Graph.Auth
         /// Creates a new <see cref="IConfidentialClientApplication"/>
         /// </summary>
         /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
-        /// <param name="clientCredential">A <see cref="Microsoft.Identity.Client.ClientCredential"/> created either from an application secret or a certificate</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
+        /// <param name="clientCertificate">A <see cref="System.Security.Cryptography.X509Certificates.X509Certificate2"/> certificate.</param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <see cref="AadAuthorityAudience.AzureAdMultipleOrgs" /> if none is specified.</param>
+        /// <param name="cloud">A <see cref="AzureCloudInstance"/> which identifies the cloud endpoint to use as the authority. This defaults to the public cloud <see cref="AzureCloudInstance.AzurePublic"/> (https://login.microsoftonline.com).</param>
         /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
         /// <exception cref="AuthenticationException"/>
-        public static IConfidentialClientApplication CreateClientApplication(string clientId,
-            ClientCredential clientCredential,
-            ITokenStorageProvider tokenStorageProvider = null,
+        public static IConfidentialClientApplication CreateClientApplication(
+            string clientId,
+            X509Certificate2 clientCertificate,
             string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
+            AzureCloudInstance cloud = AzureCloudInstance.AzurePublic)
+        {
+            return CreateConfidentialClientApplicationBuilder(clientId, tenant, cloud)
+                .WithCertificate(clientCertificate)
+                .Build();
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="IConfidentialClientApplication"/>
+        /// </summary>
+        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
+        /// <param name="clientSecret">A client secret.</param>
+        /// <param name="tenant">Tenant to sign-in users. This defaults to <see cref="AadAuthorityAudience.AzureAdMultipleOrgs" /> if none is specified.</param>
+        /// <param name="cloud">A <see cref="AzureCloudInstance"/> which identifies the cloud endpoint to use as the authority. This defaults to the public cloud <see cref="AzureCloudInstance.AzurePublic"/> (https://login.microsoftonline.com).</param>
+        /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
+        /// <exception cref="AuthenticationException"/>
+        public static IConfidentialClientApplication CreateClientApplication(
+            string clientId,
+            string clientSecret,
+            string tenant = null,
+            AzureCloudInstance cloud = AzureCloudInstance.AzurePublic)
+        {
+            return CreateConfidentialClientApplicationBuilder(clientId, tenant, cloud)
+                .WithClientSecret(clientSecret)
+                .Build();
+        }
+
+        private static ConfidentialClientApplicationBuilder CreateConfidentialClientApplicationBuilder(
+            string clientId,
+            string tenant,
+            AzureCloudInstance cloud)
         {
             if (string.IsNullOrEmpty(clientId))
                 throw new AuthenticationException(
@@ -55,9 +85,17 @@ namespace Microsoft.Graph.Auth
                         Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
                     });
 
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new ConfidentialClientApplication(clientId, authority, "https://replyUrl", clientCredential, null, tokenCacheProvider.GetTokenCacheInstnce());
+
+            var builder = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri("https://replyUrl");
+
+            if (tenant != null)
+                builder = builder.WithAuthority(cloud, tenant);
+            else
+                builder = builder.WithAuthority(cloud, AadAuthorityAudience.AzureAdMultipleOrgs);
+
+            return builder;
         }
 
         /// <summary>
@@ -73,7 +111,9 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    AuthenticationResult authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { AuthConstants.DefaultScopeUrl }, msalAuthProviderOption.ForceRefresh);
+                    AuthenticationResult authenticationResult = await ClientApplication.AcquireTokenForClient(new string[] { AuthConstants.DefaultScopeUrl })
+                        .WithForceRefresh(msalAuthProviderOption.ForceRefresh)
+                        .ExecuteAsync();
 
                     if (!string.IsNullOrEmpty(authenticationResult?.AccessToken))
                         httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);

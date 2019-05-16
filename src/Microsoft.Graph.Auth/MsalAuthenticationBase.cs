@@ -5,25 +5,25 @@
 namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using System;
 
     /// <summary>
     /// Abstract class containing common API methods and properties to retrieve an access token. All authentication providers extend this class
     /// </summary>
-    public abstract class MsalAuthenticationBase
+    public abstract class MsalAuthenticationBase<T> where T : IClientApplicationBase
     {
         /// <summary>
         /// A <see cref="ClientApplicationBase"/> property
         /// </summary>
-        internal IClientApplicationBase ClientApplication { get; set; }
+        internal T ClientApplication { get; set; }
 
         /// <summary>
         /// A scopes property
         /// </summary>
-        internal string[] Scopes { get; }
+        internal IEnumerable<string> Scopes { get; }
 
         /// <summary>
         /// A MaxRetry property.
@@ -31,16 +31,16 @@ namespace Microsoft.Graph.Auth
         internal int MaxRetry { get; set; } = 1;
 
         /// <summary>
-        /// Constructs a new <see cref="MsalAuthenticationBase"/>
+        /// Constructs a new <see cref="MsalAuthenticationBase{T}"/>
         /// </summary>
         /// <param name="graphScopes">Scopes requested to access a protected API</param>
-        public MsalAuthenticationBase(string[] graphScopes = null)
+        public MsalAuthenticationBase(IEnumerable<string> graphScopes = null)
         {
-            Scopes = graphScopes ?? new string[] { AuthConstants.DefaultScopeUrl };
+            Scopes = graphScopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
 
             if (Scopes.Count() == 0)
             {
-                throw new AuthenticationException(new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes}, new ArgumentException());
+                throw new AuthenticationException(new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes }, new ArgumentException());
             }
         }
 
@@ -67,14 +67,13 @@ namespace Microsoft.Graph.Auth
                 return null;
 
             try
-            {
-                return await ClientApplication.AcquireTokenSilentAsync(
-                    msalAuthProviderOption.Scopes ?? Scopes,
-                    account,
-                    ClientApplication.Authority,
-                    msalAuthProviderOption.ForceRefresh);
+            {                
+                return await ClientApplication.AcquireTokenSilent(msalAuthProviderOption.Scopes ?? Scopes, account)                        
+                        .WithAuthority(ClientApplication.Authority)
+                        .WithForceRefresh(msalAuthProviderOption.ForceRefresh)
+                        .ExecuteAsync();
             }
-            catch (MsalException msalEx)
+            catch (MsalException)
             {
                 return null;
             }

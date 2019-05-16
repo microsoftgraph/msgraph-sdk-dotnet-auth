@@ -1,99 +1,86 @@
-﻿using Microsoft.Graph.Auth.Test.Mocks;
-using Microsoft.Identity.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
-
-namespace Microsoft.Graph.Auth.Test.ConfidentialClient
+﻿namespace Microsoft.Graph.Auth.Test.ConfidentialClient
 {
-    [TestClass]
+    using Microsoft.Graph.Auth.Test.Extensions;
+    using Microsoft.Identity.Client;
+    using Moq;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Security.Cryptography.X509Certificates;
+    using Xunit;
+
     public class ClientCredentialProviderTests
     {
-        private const string _clientId = "client_id";
-        private const string _redirectUri = "redirectUri";
-        private const string _commonAuthority = "https://login.microsoftonline.com/common/";
-
-        private AuthenticationResult _mockAuthResult;
-        private MockConfidentialClientApplication _mockClientApplicationBase;
-        private ClientCredential _clientCredential;
-
-        [TestInitialize]
-        public void Setup()
+        [Fact]
+        public void ShouldConstructAuthProviderWithConfidentialClientApp()
         {
-            _clientCredential = new ClientCredential("appSecret");
-            _mockAuthResult = MockAuthResult.GetAuthenticationResult(null);
-            _mockClientApplicationBase = new MockConfidentialClientApplication(null, _commonAuthority, false, _clientId, _mockAuthResult);
+            string clientId = "00000000-0000-0000-0000-000000000000";
+            string clientSecret = "00000000-0000-0000-0000-000000000000";
+            string authority = "https://login.microsoftonline.com/organizations/";
+            string redirectUri = "https://login.microsoftonline.com/common/oauth2/deviceauth";
+            
+            IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(clientSecret)
+                .WithAuthority(authority)
+                .Build();
+
+            ClientCredentialProvider auth = new ClientCredentialProvider(confidentialClientApplication);
+
+            Assert.IsAssignableFrom<IAuthenticationProvider>(auth);
+            Assert.NotNull(auth.ClientApplication);
+            Assert.Same(confidentialClientApplication, auth.ClientApplication);
         }
 
-        [TestMethod]
-        public void ClientCredentialProvider_ShouldConstructAuthProviderWithConfidentialClientApp()
+        [Fact]
+        public void ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
         {
-            ConfidentialClientApplication cca = new ConfidentialClientApplication(_clientId, _redirectUri, _clientCredential, new TokenCache(), null);
-            ClientCredentialProvider auth = new ClientCredentialProvider(cca);
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new ClientCredentialProvider(null));
 
-            Assert.IsInstanceOfType(auth, typeof(IAuthenticationProvider), "Unexpected auth provider set.");
-            Assert.IsNotNull(auth.ClientApplication, "Client application not initialized.");
-            Assert.AreSame(cca, auth.ClientApplication, "Wrong client application set.");
+            Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);
+            Assert.Equal(ex.Error.Message, String.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"));
         }
 
-        [TestMethod]
-        public void ClientCredentialProvider_ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
+        [Fact]
+        public void ShouldCreateConfidentialClientApplicationWithMandatorySecretParams()
         {
-            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new ClientCredentialProvider(null));
+            string clientId = "00000000-0000-0000-0000-000000000000";
+            string clientSecret = "00000000-0000-0000-0000-000000000000";
 
-            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
-            Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"), "Invalid exception message.");
+            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(clientId, clientSecret);
+
+            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
+            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
+            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
         }
 
-        [TestMethod]
-        public void ClientCredentialProvider_ShouldCreateConfidentialClientApplicationWithMandatoryParams()
+        [Fact]
+        public void ShouldCreateConfidentialClientApplicationWithMandatoryCertificateParams()
         {
-            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(_clientId, _clientCredential);
+            string clientId = "00000000-0000-0000-0000-000000000000";
 
-            Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
-            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
-            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.Global], AuthConstants.Tenants.Common), clientApp.Authority, "Wrong authority set.");
+            var clientCertificate = Mock.Of<X509Certificate2>();
+
+            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(clientId, clientCertificate);
+
+            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
+            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
+            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
         }
 
-        [TestMethod]
-        public void ClientCredentialProvider_ShouldCreateConfidentialClientApplicationForConfiguredCloud()
+        [Fact]
+        public void ShouldCreateConfidentialClientApplicationForConfiguredCloud()
         {
-            string tenant = "infotest";
-            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(_clientId, _clientCredential, null, tenant, NationalCloud.China);
+            string clientId = "00000000-0000-0000-0000-000000000000";
+            string testTenant = "infotest";
+            string clientSecret = "00000000-0000-0000-0000-000000000000";
 
-            Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
-            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
-            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], tenant), clientApp.Authority, "Wrong authority set.");
-        }
+            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(clientId, clientSecret, tenant: testTenant, cloud: AzureCloudInstance.AzureChina);
 
-        [TestMethod]
-        public void ClientCredentialProvider_ShouldUseDefaultScopeUrlWhenScopeIsNull()
-        {
-            ClientCredentialProvider clientCredentialProvider = new ClientCredentialProvider(_mockClientApplicationBase.Object);
-
-            Assert.IsNotNull(clientCredentialProvider.Scopes, "Default scope url not set.");
-            Assert.IsTrue(clientCredentialProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
-            Assert.AreEqual(AuthConstants.DefaultScopeUrl, clientCredentialProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
-        }
-
-        [TestMethod]
-        public async Task ClientCredentialProvider_ShouldGetNewAccessTokenWhenUserAccountIsNull()
-        {
-            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            _mockClientApplicationBase.Setup((cca) => cca.AcquireTokenForClientAsync(new string[] { "https://graph.microsoft.com/.default" }, false))
-                .ReturnsAsync(_mockAuthResult);
-
-            ClientCredentialProvider authProvider = new ClientCredentialProvider(_mockClientApplicationBase.Object);
-
-            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
-
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
-            Assert.AreEqual(_mockAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
+            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
+            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
+            Assert.Equal(AzureCloudInstance.AzureChina.GetAuthorityUrl(AadAuthorityAudience.AzureAdMyOrg, testTenant), clientApp.Authority);
         }
     }
 }

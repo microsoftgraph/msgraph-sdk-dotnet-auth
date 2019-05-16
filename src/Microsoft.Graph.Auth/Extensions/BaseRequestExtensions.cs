@@ -6,6 +6,9 @@ namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
 
+    /// <summary>
+    /// Extension methods for the <see cref="IBaseRequest"/> interface.
+    /// </summary>
     public static class BaseRequestExtensions
     {
         /// <summary>

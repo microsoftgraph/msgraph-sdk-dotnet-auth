@@ -6,7 +6,7 @@
     <AssemblyVersion>0.1.0</AssemblyVersion>
     <Authors>Microsoft</Authors>
     <Company>Microsoft Corporation</Company>
-    <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Microsoft.Graph.Auth</AssemblyName>
     <PackageId>Microsoft.Graph.Auth</PackageId>
     <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK;MSAL</PackageTags>
@@ -30,13 +30,8 @@ Release Summary
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Graph.Core" Version="1.14.0-preview" />
-    <PackageReference Include="Microsoft.Identity.Client" Version="2.7.1" />
+    <PackageReference Include="Microsoft.Graph.Core" Version="1.15.0" />
+    <PackageReference Include="Microsoft.Identity.Client" Version="3.0.8" />
     <PackageReference Include="System.Security.Principal" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
-    <PackageReference Include="System.Security.Claims">
-      <Version>4.3.0</Version>
-    </PackageReference>
   </ItemGroup>
 </Project>
