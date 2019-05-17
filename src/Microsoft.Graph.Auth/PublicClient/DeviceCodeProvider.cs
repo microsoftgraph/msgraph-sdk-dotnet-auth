@@ -40,6 +40,7 @@ namespace Microsoft.Graph.Auth
                         Code = ErrorConstants.Codes.InvalidRequest,
                         Message = string.Format(ErrorConstants.Message.NullValue, nameof(publicClientApplication))
                     });
+
             DeviceCodeResultCallback = deviceCodeResultCallback ?? (async (result) => await Console.Out.WriteLineAsync(result.Message));
         }
 
