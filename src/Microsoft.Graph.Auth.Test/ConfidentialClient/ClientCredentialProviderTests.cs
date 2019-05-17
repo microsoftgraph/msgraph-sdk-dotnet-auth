@@ -41,46 +41,5 @@
             Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);
             Assert.Equal(ex.Error.Message, String.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"));
         }
-
-        [Fact]
-        public void ShouldCreateConfidentialClientApplicationWithMandatorySecretParams()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-            string clientSecret = "00000000-0000-0000-0000-000000000000";
-
-            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(clientId, clientSecret);
-
-            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
-        }
-
-        [Fact]
-        public void ShouldCreateConfidentialClientApplicationWithMandatoryCertificateParams()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-
-            var clientCertificate = Mock.Of<X509Certificate2>();
-
-            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(clientId, clientCertificate);
-
-            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
-        }
-
-        [Fact]
-        public void ShouldCreateConfidentialClientApplicationForConfiguredCloud()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-            string testTenant = "infotest";
-            string clientSecret = "00000000-0000-0000-0000-000000000000";
-
-            IClientApplicationBase clientApp = ClientCredentialProvider.CreateClientApplication(clientId, clientSecret, tenant: testTenant, cloud: AzureCloudInstance.AzureChina);
-
-            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzureChina.GetAuthorityUrl(AadAuthorityAudience.AzureAdMyOrg, testTenant), clientApp.Authority);
-        }
     }
 }

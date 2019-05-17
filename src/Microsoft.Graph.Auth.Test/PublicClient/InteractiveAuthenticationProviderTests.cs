@@ -42,31 +42,6 @@
         }
 
         [Fact]
-        public void ShouldCreatePublicClientApplicationWithMandatoryParams()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-
-            IClientApplicationBase clientApp = InteractiveAuthenticationProvider.CreateClientApplication(clientId);
-
-            Assert.IsType<PublicClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
-        }
-
-        [Fact]
-        public void ShouldCreatePublicClientApplicationForConfiguredCloud()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-            string testTenant = "infotest";
-
-            IClientApplicationBase clientApp = InteractiveAuthenticationProvider.CreateClientApplication(clientId, tenant: testTenant, cloud: AzureCloudInstance.AzureChina);
-
-            Assert.IsType<PublicClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzureChina.GetAuthorityUrl(AadAuthorityAudience.AzureAdMyOrg, testTenant), clientApp.Authority);
-        }
-
-        [Fact]
         public void ShouldUseDefaultScopeUrlWhenScopeIsNull()
         {
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");

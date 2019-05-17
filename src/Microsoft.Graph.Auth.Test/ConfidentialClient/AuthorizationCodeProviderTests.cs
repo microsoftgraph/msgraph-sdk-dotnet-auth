@@ -48,50 +48,6 @@
         }
 
         [Fact]
-        public void ShouldCreateConfidentialClientApplicationWithMandatorySecretParams()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-            string redirectUri = "https://login.microsoftonline.com/common/oauth2/deviceauth";
-            string clientSecret = "00000000-0000-0000-0000-000000000000";
-
-            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientSecret);
-
-            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
-        }
-
-        [Fact]
-        public void ShouldCreateConfidentialClientApplicationWithMandatoryCertificateParams()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-            string redirectUri = "https://login.microsoftonline.com/common/oauth2/deviceauth";
-            
-            var clientCertificate = Mock.Of<X509Certificate2>();
-
-            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientCertificate);
-
-            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzurePublic.GetAuthorityUrl(AadAuthorityAudience.AzureAdMultipleOrgs), clientApp.Authority);
-        }
-
-        [Fact]
-        public void ShouldCreateConfidentialClientApplicationForConfiguredCloud()
-        {
-            string clientId = "00000000-0000-0000-0000-000000000000";
-            string testTenant = "infotest";
-            string redirectUri = "https://login.microsoftonline.com/common/oauth2/deviceauth";
-            string clientSecret = "00000000-0000-0000-0000-000000000000";
-
-            IClientApplicationBase clientApp = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientSecret, tenant: testTenant, cloud: AzureCloudInstance.AzureChina);
-
-            Assert.IsAssignableFrom<ConfidentialClientApplication>(clientApp);
-            Assert.Equal(clientId, clientApp.AppConfig.ClientId);
-            Assert.Equal(AzureCloudInstance.AzureChina.GetAuthorityUrl(AadAuthorityAudience.AzureAdMyOrg, testTenant), clientApp.Authority);
-        }
-
-        [Fact]
         public void ShouldUseDefaultScopeUrlWhenScopeIsNull()
         {
             var mock = Mock.Of<IConfidentialClientApplication>();

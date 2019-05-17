@@ -43,29 +43,6 @@ namespace Microsoft.Graph.Auth
         /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
         /// <param name="redirectUri">also named <i>Reply URI</i>, the redirect URI is the URI where the STS (Security Token Service) will call back the application
         ///  with the security token. For details see https://aka.ms/msal-net-client-applications.</param>
-        /// <param name="clientCertificate">A <see cref="System.Security.Cryptography.X509Certificates.X509Certificate2"/> certificate.</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <see cref="AadAuthorityAudience.AzureAdMultipleOrgs" /> if none is specified.</param>
-        /// <param name="cloud">A <see cref="AzureCloudInstance"/> which identifies the cloud endpoint to use as the authority. This defaults to the public cloud <see cref="AzureCloudInstance.AzurePublic"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IConfidentialClientApplication CreateClientApplication(
-            string clientId,
-            string redirectUri,
-            X509Certificate2 clientCertificate,
-            string tenant = null,
-            AzureCloudInstance cloud = AzureCloudInstance.AzurePublic)
-        {
-            return CreateConfidentialClientApplicationBuilder(clientId, redirectUri, tenant, cloud)
-                .WithCertificate(clientCertificate)
-                .Build();
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="IConfidentialClientApplication"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="redirectUri">also named <i>Reply URI</i>, the redirect URI is the URI where the STS (Security Token Service) will call back the application
-        ///  with the security token. For details see https://aka.ms/msal-net-client-applications.</param>
         /// <param name="clientSecret">A client secret.</param>
         /// <param name="tenant">Tenant to sign-in users. This defaults to <see cref="AadAuthorityAudience.AzureAdMultipleOrgs" /> if none is specified.</param>
         /// <param name="cloud">A <see cref="AzureCloudInstance"/> which identifies the cloud endpoint to use as the authority. This defaults to the public cloud <see cref="AzureCloudInstance.AzurePublic"/> (https://login.microsoftonline.com).</param>

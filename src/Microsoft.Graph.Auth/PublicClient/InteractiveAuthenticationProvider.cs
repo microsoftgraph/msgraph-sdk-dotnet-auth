@@ -28,13 +28,11 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Parent activity or window.
         /// </summary>
-        [CLSCompliant(false)]
         public IWin32Window ParentWindow { get; set; }
 
         /// <summary>
         /// Parent activity or window.
         /// </summary>
-        [CLSCompliant(false)]
         public IntPtr ParentPointer { get; set; }
 
         /// <summary>
@@ -43,8 +41,8 @@ namespace Microsoft.Graph.Auth
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="prompt">Designed interactive experience for the user. Defaults to <see cref="Prompt.SelectAccount"/>.</param>
-        /// <param name="parent">Object containing a reference to the parent window/activity.</param>
-        [CLSCompliant(false)]
+        /// <param name="window">Object containing a reference to the parent window/activity.</param>
+        /// <param name="pointer">Object containing a reference to the parent window/activity.</param>
         public InteractiveAuthenticationProvider(
             IPublicClientApplication publicClientApplication,
             IEnumerable<string> scopes = null,
@@ -93,39 +91,6 @@ namespace Microsoft.Graph.Auth
             Parent = parent;
         }
 #endif
-        /// <summary>
-        /// Creates a new <see cref="IPublicClientApplication"/>.
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <see cref="AadAuthorityAudience.AzureAdMultipleOrgs"/> if none is specified.</param>
-        /// <param name="redirectUri">The redirect Uri used by the application. This defaults to <i></i> if none is specified.</param>
-        /// <param name="cloud">A <see cref="AzureCloudInstance"/> which identifies the cloud endpoint to use as the authority. This defaults to the public cloud <see cref="AzureCloudInstance.AzurePublic"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IPublicClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IPublicClientApplication CreateClientApplication(string clientId,
-            string tenant = null,
-            string redirectUri = "https://login.microsoftonline.com/common/oauth2/nativeclient",
-            AzureCloudInstance cloud = AzureCloudInstance.AzurePublic)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
-                    });
-
-            var builder = PublicClientApplicationBuilder
-                .Create(clientId)
-                .WithRedirectUri(redirectUri);
-
-            if (tenant != null)
-                builder = builder.WithAuthority(cloud, tenant);
-            else
-                builder = builder.WithAuthority(cloud, AadAuthorityAudience.AzureAdMultipleOrgs);
-
-            return builder.Build();
-        }
 
         /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>

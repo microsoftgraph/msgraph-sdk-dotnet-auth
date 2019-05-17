@@ -38,37 +38,6 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Creates a new <see cref="IPublicClientApplication"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <see cref="AadAuthorityAudience.AzureAdMultipleOrgs" /> if none is specified.</param>
-        /// <param name="cloud">A <see cref="AzureCloudInstance"/> which identifies the cloud endpoint to use as the authority. This defaults to the public cloud <see cref="AzureCloudInstance.AzurePublic"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IPublicClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IPublicClientApplication CreateClientApplication(string clientId,
-            string tenant = null,
-            AzureCloudInstance cloud = AzureCloudInstance.AzurePublic)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
-                    });
-
-            var builder = PublicClientApplicationBuilder
-                .Create(clientId);
-
-            if (tenant != null)
-                builder = builder.WithAuthority(cloud, tenant);
-            else
-                builder = builder.WithAuthority(cloud, AadAuthorityAudience.AzureAdMultipleOrgs);
-
-            return builder.Build();
-        }
-
-        /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token. If a token is not found or expired, it gets a new one.
         /// </summary>
