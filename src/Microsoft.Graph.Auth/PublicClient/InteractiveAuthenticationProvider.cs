@@ -4,81 +4,93 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Identity.Client;
     using System;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
-    using Microsoft.Graph.Auth.Helpers;
-    using Microsoft.Identity.Client;
+#if NET45
+    using System.Windows.Forms;
+#endif
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token interactively
     /// </summary>
-    public partial class InteractiveAuthenticationProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public partial class InteractiveAuthenticationProvider : MsalAuthenticationBase<IPublicClientApplication>, IAuthenticationProvider
     {
         /// <summary>
-        /// A UIBehavior property
+        /// Indicates the interactive experience for the user.
         /// </summary>
-        public UIBehavior UIBehavior { get; set; }
+        public Prompt Prompt { get; set; }
+
+#if NET45
+        /// <summary>
+        /// Parent activity or window.
+        /// </summary>
+        public IWin32Window ParentWindow { get; set; }
 
         /// <summary>
-        /// A UIParent property
+        /// Parent activity or window.
         /// </summary>
-        public UIParent UIParent { get; set; }
+        public IntPtr ParentPointer { get; set; }
 
         /// <summary>
         /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
-        /// <param name="uiBehavior">Designed interactive experience for the user. Defaults to <see cref="UIBehavior.SelectAccount"/>.</param>
-        /// <param name="uiParent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
+        /// <param name="prompt">Designed interactive experience for the user. Defaults to <see cref="Prompt.SelectAccount"/>.</param>
+        /// <param name="window">Object containing a reference to the parent window/activity.</param>
+        /// <param name="pointer">Object containing a reference to the parent window/activity.</param>
         public InteractiveAuthenticationProvider(
             IPublicClientApplication publicClientApplication,
-            string[] scopes = null,
-            UIBehavior? uiBehavior = null,
-            UIParent uiParent = null)
+            IEnumerable<string> scopes = null,
+            Prompt? prompt = null,
+            IWin32Window window = null,
+            IntPtr pointer = default(IntPtr))
             : base(scopes)
         {
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, "publicClientApplication")
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(publicClientApplication))
                     });
-            UIBehavior = uiBehavior ?? UIBehavior.SelectAccount;
-            UIParent = uiParent;
+            Prompt = prompt ?? Prompt.SelectAccount;
+            ParentWindow = window;
+            ParentPointer = pointer;
         }
+#elif NETSTANDARD1_3
+        /// <summary>
+        /// Parent activity or window.
+        /// </summary>
+        public object Parent { get; set; }
 
         /// <summary>
-        /// Creates a new <see cref="IPublicClientApplication"/>.
-        /// On mobile platforms (UWP and Xamarin), a secure and performant storage mechanism is implemeted by MSAL and you shouldn't pass a <see cref="ITokenStorageProvider"/> implementation.
-        /// For more details about custom token cache serialization, visit https://aka.ms/msal-net-serialization.
+        /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token.</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IPublicClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IPublicClientApplication CreateClientApplication(string clientId,
-            ITokenStorageProvider tokenStorageProvider = null,
-            string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
+        /// <param name="prompt">Designed interactive experience for the user. Defaults to <see cref="Prompt.SelectAccount"/>.</param>
+        /// <param name="parent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
+        public InteractiveAuthenticationProvider(
+            IPublicClientApplication publicClientApplication,
+            IEnumerable<string> scopes = null,
+            Prompt? prompt = null,
+            object parent = null)
+            : base(scopes)
         {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
+            ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(publicClientApplication))
                     });
-            // MSAL has a guard against using token cache extension methods for mobile platforms (UWP and Xamarin) since it internally implements a secure token cache implementation.
-            // For more details about custom token cache serialization, visit https://aka.ms/msal-net-serialization.
-            TokenCache tokenCache = tokenStorageProvider == null ? new TokenCache() : new TokenCacheProvider(tokenStorageProvider).GetTokenCacheInstnce();
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new PublicClientApplication(clientId, authority, tokenCache);
+            Prompt = prompt ?? Prompt.SelectAccount;
+            Parent = parent;
         }
+#endif
 
         /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
@@ -101,9 +113,8 @@ namespace Microsoft.Graph.Auth
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(IAccount account, string[] scopes)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(IAccount account, IEnumerable<string> scopes)
         {
-            IPublicClientApplication publicClientApplication = (ClientApplication as IPublicClientApplication);
             AuthenticationResult authenticationResult = null;
             
             int retryCount = 0;
@@ -112,7 +123,25 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await publicClientApplication.AcquireTokenAsync(scopes, account, UIBehavior, extraQueryParameter, null, ClientApplication.Authority, UIParent);
+                    var builder = ClientApplication.AcquireTokenInteractive(scopes)
+                        .WithAccount(account)
+                        .WithPrompt(Prompt)
+                        .WithExtraQueryParameters(extraQueryParameter)
+                        .WithExtraScopesToConsent(null)
+                        .WithAuthority(ClientApplication.Authority);
+#if NET45
+                    if (ParentWindow != null)
+                    {
+                        builder = builder.WithParentActivityOrWindow(ParentWindow);
+                    }
+                    else
+                    {
+                        builder = builder.WithParentActivityOrWindow(ParentPointer);
+                    }
+#elif NETSTANDARD1_3
+                    builder = builder.WithParentActivityOrWindow(Parent);
+#endif
+                    authenticationResult = await builder.ExecuteAsync();
                     break;
                 }
                 catch (MsalServiceException serviceException)

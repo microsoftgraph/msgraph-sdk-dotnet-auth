@@ -4,16 +4,17 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Identity.Client;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
-    using Microsoft.Identity.Client;
-    using Microsoft.Graph.Auth.Helpers;
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by authorization code flow for web apps.
     /// </summary>
-    public class AuthorizationCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class AuthorizationCodeProvider : MsalAuthenticationBase<IConfidentialClientApplication>, IAuthenticationProvider
     {
         /// <summary>
         /// Construct a new <see cref="AuthorizationCodeProvider"/>
@@ -22,54 +23,15 @@ namespace Microsoft.Graph.Auth
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default if none is set.</param>
         public AuthorizationCodeProvider(
             IConfidentialClientApplication confidentialClientApplication,
-            string[] scopes = null)
+            IEnumerable<string> scopes = null)
             : base(scopes)
         {
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication")
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(confidentialClientApplication))
                     });
-        }
-        
-        /// <summary>
-        /// Creates a new <see cref="IConfidentialClientApplication"/>.
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="redirectUri">Also named <i>Reply URI</i>, the redirect URI is the URI where the STS (Security Token Service) will call back the application
-        ///  with the security token. For details see https://aka.ms/msal-net-client-applications.</param>
-        /// <param name="clientCredential">A <see cref="Microsoft.Identity.Client.ClientCredential"/> created either from an application secret or a certificate.</param>
-        /// <param name="tokenStorageProvider">An <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"></exception>
-        public static IConfidentialClientApplication CreateClientApplication(string clientId,
-            string redirectUri,
-            ClientCredential clientCredential,
-            ITokenStorageProvider tokenStorageProvider = null,
-            string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
-                    });
-
-            if (string.IsNullOrEmpty(redirectUri))
-                throw new AuthenticationException(
-                    new Error {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(redirectUri))
-                    });
-
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, tokenCacheProvider.GetTokenCacheInstnce(), null);
         }
 
         /// <summary>
@@ -104,7 +66,8 @@ namespace Microsoft.Graph.Auth
         /// <returns></returns>
         public async Task<AuthenticationResult> GetTokenByAuthorizationCodeAsync(string authorizationCode)
         {
-            return await (ClientApplication as IConfidentialClientApplication).AcquireTokenByAuthorizationCodeAsync(authorizationCode, Scopes);
+            return await ClientApplication.AcquireTokenByAuthorizationCode(Scopes, authorizationCode)
+                .ExecuteAsync();
         }
     }
 }

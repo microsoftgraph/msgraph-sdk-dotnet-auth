@@ -5,6 +5,7 @@
 namespace Microsoft.Graph.Auth
 {
     using System.Net.Http;
+
     internal static class HttpRequestMessageExtensions
     {
         internal static MsalAuthenticationProviderOption GetMsalAuthProviderOption(this HttpRequestMessage httpRequestMessage)

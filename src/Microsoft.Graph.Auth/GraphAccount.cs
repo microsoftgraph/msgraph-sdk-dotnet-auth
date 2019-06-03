@@ -5,6 +5,7 @@
 namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
+
     internal class GraphAccount : IAccount
     {
         public GraphAccount(GraphUserAccount graphUserAccount)

@@ -1,175 +1,88 @@
 ﻿namespace Microsoft.Graph.Auth.Test.ConfidentialClient
 {
+    using Microsoft.Graph.Auth.Test.Extensions;
+    using Microsoft.Identity.Client;
+    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
-    using System.Threading.Tasks;
-    using Microsoft.Graph.Auth.Test.Mocks;
-    using Microsoft.Identity.Client;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using System.Security.Cryptography.X509Certificates;
+    using Xunit;
 
-    [TestClass]
     public class OnBehalfOfProviderTests
     {
-        private const string _clientId = "client_id";
-        private const string _redirectUri = "redirectUri";
-        private const string _jwtAccessToken = "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkFBMjMyVEVTVCIsImFsZyI6IkhTMjU2In0.eyJmYW1pbHlfbmFtZSI6IkRvZSIsImdpdmVuX25hbWUiOiJKb2huIiwibmFtZSI6IkpvaG4gRG9lIiwib2lkIjoiZTYwMmFkYTctNmVmZC00ZTE4LWE5NzktNjNjMDJiOWYzYzc2Iiwic2NwIjoiVXNlci5SZWFkQmFzaWMuQWxsIiwidGlkIjoiNmJjMTUzMzUtZTJiOC00YTlhLTg2ODMtYTUyYTI2YzhjNTgzIiwidW5pcXVlX25hbWUiOiJqb2huQGRvZS50ZXN0LmNvbSIsInVwbiI6ImpvaG5AZG9lLnRlc3QuY29tIn0.hf9xI5XYBjGec-4n4_Kxj8Nd2YHBtihdevYhzFxbpXQ";
-        private string[] _scopes = new string[] { "User.Read" };
-        private AuthenticationResult _silentAuthResult;
-        private MockConfidentialClientApplication _mockClientApplicationBase;
-        private GraphUserAccount _graphUserAccount;
-        private ClientCredential _clientCredential;
-
-        [TestInitialize]
-        public void Setup()
+        [Fact]
+        public void ShouldConstructAuthProviderWithConfidentialClientApp()
         {
-            _clientCredential = new ClientCredential("appSecret");
-            _graphUserAccount = new GraphUserAccount
-            {
-                Email = "xyz@test.net",
-                Environment = "login.microsoftonline.com",
-                ObjectId = Guid.NewGuid().ToString(),
-                TenantId = Guid.NewGuid().ToString()
-            };
-            _silentAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount), _scopes);
-            _mockClientApplicationBase = new MockConfidentialClientApplication(_scopes, "common", false, _clientId, _silentAuthResult);
+            string clientId = "00000000-0000-0000-0000-000000000000";
+            string clientSecret = "00000000-0000-0000-0000-000000000000";
+            string authority = "https://login.microsoftonline.com/organizations/";
+            string redirectUri = "https://login.microsoftonline.com/common/oauth2/deviceauth";
+            IEnumerable<string> scopes = new List<string> { "User.ReadBasic.All" };
+
+            IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(clientSecret)
+                .WithAuthority(authority)
+                .Build();
+
+            OnBehalfOfProvider auth = new OnBehalfOfProvider(confidentialClientApplication, scopes);
+
+            Assert.IsAssignableFrom<IAuthenticationProvider>(auth);
+            Assert.NotNull(auth.ClientApplication);
+            Assert.Same(confidentialClientApplication, auth.ClientApplication);
         }
 
-        [TestMethod]
-        public void OnBehalfOfProvider_ShouldConstructAuthProviderWithConfidentialClientApp()
+        [Fact]
+        public void ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
         {
-            ConfidentialClientApplication cca = new ConfidentialClientApplication(_clientId, _redirectUri, _clientCredential, new TokenCache(), null);
-            OnBehalfOfProvider auth = new OnBehalfOfProvider(cca, _scopes);
+            IEnumerable<string> scopes = new List<string> { "User.ReadBasic.All" };
 
-            Assert.IsInstanceOfType(auth, typeof(IAuthenticationProvider), "Unexpected auth provider set.");
-            Assert.IsNotNull(auth.ClientApplication, "Client application not initialized.");
-            Assert.AreSame(cca, auth.ClientApplication, "Wrong client application set.");
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new OnBehalfOfProvider(null, scopes));
+
+            Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);
+            Assert.Equal(ex.Error.Message, String.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"));
         }
 
-        [TestMethod]
-        public void OnBehalfOfProvider_ConstructorShouldThrowExceptionWithNullConfidentialClientApp()
+        [Fact]
+        public void ShouldUseDefaultScopeUrlWhenScopeIsNull()
         {
-            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new OnBehalfOfProvider(null, _scopes));
+            var mock = Mock.Of<IConfidentialClientApplication>();
 
-            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
-            Assert.AreEqual(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "confidentialClientApplication"), "Invalid exception message.");
+            OnBehalfOfProvider onBehalfOfProvider = new OnBehalfOfProvider(mock, null);
+
+            Assert.NotNull(onBehalfOfProvider.Scopes);
+            Assert.True(onBehalfOfProvider.Scopes.Count().Equals(1));
+            Assert.Equal(AuthConstants.DefaultScopeUrl, onBehalfOfProvider.Scopes.FirstOrDefault());
         }
 
-        [TestMethod]
-        public void OnBehalfOfProvider_ShouldCreateConfidentialClientApplicationWithMandatoryParams()
+        [Fact]
+        public void ShouldThrowExceptionWhenScopesAreEmpty()
         {
-            IClientApplicationBase clientApp = OnBehalfOfProvider.CreateClientApplication(_clientId, _redirectUri, _clientCredential);
+            var mock = Mock.Of<IConfidentialClientApplication>();
 
-            Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
-            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
-            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.Global], AuthConstants.Tenants.Common), clientApp.Authority, "Wrong authority set.");
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new OnBehalfOfProvider(mock, Enumerable.Empty<string>()));
+
+            Assert.Equal(ex.Error.Message, ErrorConstants.Message.EmptyScopes);
+            Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);
         }
 
-        [TestMethod]
-        public void OnBehalfOfProvider_ShouldCreateConfidentialClientApplicationForConfiguredCloud()
+        [Fact]
+        public void ShouldGetGraphUserAccountFromJwtString()
         {
-            string testTenant = "infotest";
-            IClientApplicationBase clientApp = OnBehalfOfProvider.CreateClientApplication(_clientId, _redirectUri, _clientCredential, null, testTenant, NationalCloud.China);
+            IEnumerable<string> scopes = new List<string> { "User.ReadBasic.All" };
+            string jwtAccessToken = "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkFBMjMyVEVTVCIsImFsZyI6IkhTMjU2In0.eyJmYW1pbHlfbmFtZSI6IkRvZSIsImdpdmVuX25hbWUiOiJKb2huIiwibmFtZSI6IkpvaG4gRG9lIiwib2lkIjoiZTYwMmFkYTctNmVmZC00ZTE4LWE5NzktNjNjMDJiOWYzYzc2Iiwic2NwIjoiVXNlci5SZWFkQmFzaWMuQWxsIiwidGlkIjoiNmJjMTUzMzUtZTJiOC00YTlhLTg2ODMtYTUyYTI2YzhjNTgzIiwidW5pcXVlX25hbWUiOiJqb2huQGRvZS50ZXN0LmNvbSIsInVwbiI6ImpvaG5AZG9lLnRlc3QuY29tIn0.hf9xI5XYBjGec-4n4_Kxj8Nd2YHBtihdevYhzFxbpXQ";
 
-            Assert.IsInstanceOfType(clientApp, typeof(ConfidentialClientApplication), "Unexpected client application set.");
-            Assert.AreEqual(_clientId, clientApp.ClientId, "Wrong client id set.");
-            Assert.AreEqual(string.Format(AuthConstants.CloudList[NationalCloud.China], testTenant), clientApp.Authority, "Wrong authority set.");
-        }
+            var mock = Mock.Of<IConfidentialClientApplication>();
 
-        [TestMethod]
-        public void OnBehalfOfProvider_ShouldUseDefaultScopeUrlWhenScopeIsNull()
-        {
-            OnBehalfOfProvider onBehalfOfProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, null);
+            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(mock, scopes);
+            GraphUserAccount userAccount = authProvider.GetGraphUserAccountFromJwt(jwtAccessToken);
 
-            Assert.IsNotNull(onBehalfOfProvider.Scopes, "Default scope url not set.");
-            Assert.IsTrue(onBehalfOfProvider.Scopes.Count().Equals(1), "Unexpected number of scopes set.");
-            Assert.AreEqual(AuthConstants.DefaultScopeUrl, onBehalfOfProvider.Scopes.FirstOrDefault(), "Unexpected scope set.");
-        }
-
-        [TestMethod]
-        public void OnBehalfOfProvider_ShouldThrowExceptionWhenScopesAreEmpty()
-        {
-            AuthenticationException ex = Assert.ThrowsException<AuthenticationException>(() => new OnBehalfOfProvider(_mockClientApplicationBase.Object, new string[] { }));
-
-            Assert.AreEqual(ex.Error.Message, ErrorConstants.Message.EmptyScopes, "Invalid exception message.");
-            Assert.AreEqual(ex.Error.Code, ErrorConstants.Codes.InvalidRequest, "Invalid exception code.");
-        }
-
-        [TestMethod]
-        public async Task OnBehalfOfProvider_ShouldGetNewAccessTokenWithNoUserAssertion()
-        {
-            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
-            {
-                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
-                {
-                    {
-                        typeof(AuthenticationHandlerOption).ToString(),
-                        new AuthenticationHandlerOption
-                        {
-                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
-                            {
-                                UserAssertion =  null
-                            }
-                        }
-                    }
-                }
-            });
-
-            AuthenticationResult expectedAuthResult = MockAuthResult.GetAuthenticationResult(new GraphAccount(_graphUserAccount));
-            _mockClientApplicationBase.Setup((cca) => cca.AcquireTokenOnBehalfOfAsync(_scopes, It.IsAny<UserAssertion>(), "common"))
-                .ReturnsAsync(expectedAuthResult);
-
-            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
-            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
-
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
-            Assert.AreEqual(expectedAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
-        }
-
-        [TestMethod]
-        public async Task OnBehalfOfProvider_ShouldGetCachedAccessTokenForUserAssertion()
-        {
-            UserAssertion assertion = new UserAssertion(_jwtAccessToken);
-            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-            httpRequestMessage.Properties.Add(typeof(GraphRequestContext).ToString(), new GraphRequestContext
-            {
-                MiddlewareOptions = new Dictionary<string, IMiddlewareOption>
-                {
-                    {
-                        typeof(AuthenticationHandlerOption).ToString(),
-                        new AuthenticationHandlerOption
-                        {
-                            AuthenticationProviderOption = new MsalAuthenticationProviderOption
-                            {
-                                UserAssertion =  assertion
-                            }
-                        }
-                    }
-                }
-            });
-
-            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
-            await authProvider.AuthenticateRequestAsync(httpRequestMessage);
-
-            Assert.IsInstanceOfType(authProvider.ClientApplication, typeof(IConfidentialClientApplication), "Unexpected client application set.");
-            Assert.IsNotNull(httpRequestMessage.Headers.Authorization, "Unexpected auhtorization header set.");
-            Assert.AreEqual(_silentAuthResult.AccessToken, httpRequestMessage.Headers.Authorization.Parameter, "Unexpected access token set.");
-        }
-
-        [TestMethod]
-        public void OnBehalfOfProvider_ShouldGetGraphUserAccountFromJwtString()
-        {
-            OnBehalfOfProvider authProvider = new OnBehalfOfProvider(_mockClientApplicationBase.Object, _scopes);
-            GraphUserAccount userAccount = authProvider.GetGraphUserAccountFromJwt(_jwtAccessToken);
-
-            Assert.IsNotNull(userAccount, "Unexpected graph user account.");
-            Assert.AreEqual(userAccount.ObjectId, "e602ada7-6efd-4e18-a979-63c02b9f3c76", "Unexpected oid set.");
-            Assert.AreEqual(userAccount.TenantId, "6bc15335-e2b8-4a9a-8683-a52a26c8c583", "Unexpected tid set.");
-            Assert.AreEqual(userAccount.Email, "john@doe.test.com", "Unexpected email set.");
+            Assert.NotNull(userAccount);
+            Assert.Equal("e602ada7-6efd-4e18-a979-63c02b9f3c76", userAccount?.ObjectId);
+            Assert.Equal("6bc15335-e2b8-4a9a-8683-a52a26c8c583", userAccount?.TenantId);
+            Assert.Equal("john@doe.test.com", userAccount?.Email);
         }
     }
 }
