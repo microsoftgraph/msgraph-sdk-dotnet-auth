@@ -4,9 +4,11 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
     using Microsoft.Identity.Client;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -14,18 +16,33 @@ namespace Microsoft.Graph.Auth
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by integrated windows authentication.
     /// </summary>
-    public class IntegratedWindowsAuthenticationProvider : MsalAuthenticationBase<IPublicClientApplication>, IAuthenticationProvider
+    public class IntegratedWindowsAuthenticationProvider :IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IPublicClientApplication"/> property.
+        /// </summary>
+        internal IPublicClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// Constructs a new <see cref="IntegratedWindowsAuthenticationProvider"/>
         /// </summary>
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
-        public IntegratedWindowsAuthenticationProvider(
-           IPublicClientApplication publicClientApplication,
-           IEnumerable<string> scopes = null)
-           : base(scopes)
+        public IntegratedWindowsAuthenticationProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -41,9 +58,10 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
+
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
@@ -54,7 +72,7 @@ namespace Microsoft.Graph.Auth
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -102,7 +120,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
         }

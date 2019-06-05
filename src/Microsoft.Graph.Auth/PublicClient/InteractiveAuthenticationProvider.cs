@@ -4,9 +4,11 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
     using Microsoft.Identity.Client;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -17,8 +19,18 @@ namespace Microsoft.Graph.Auth
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token interactively
     /// </summary>
-    public partial class InteractiveAuthenticationProvider : MsalAuthenticationBase<IPublicClientApplication>, IAuthenticationProvider
+    public partial class InteractiveAuthenticationProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IPublicClientApplication"/> property.
+        /// </summary>
+        internal IPublicClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// Indicates the interactive experience for the user.
         /// </summary>
@@ -49,8 +61,15 @@ namespace Microsoft.Graph.Auth
             Prompt? prompt = null,
             IWin32Window window = null,
             IntPtr pointer = default(IntPtr))
-            : base(scopes)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -79,8 +98,15 @@ namespace Microsoft.Graph.Auth
             IEnumerable<string> scopes = null,
             Prompt? prompt = null,
             object parent = null)
-            : base(scopes)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -99,21 +125,22 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
+
             IAccount account = new GraphAccount(msalAuthProviderOption.UserAccount);
-            AuthenticationResult authenticationResult = await this.GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync(account, msalAuthProviderOption.Scopes ?? Scopes);
+                authenticationResult = await GetNewAccessTokenAsync(account, msalAuthProviderOption);
             }
 
             if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(IAccount account, IEnumerable<string> scopes)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(IAccount account, AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             
@@ -123,7 +150,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    var builder = ClientApplication.AcquireTokenInteractive(scopes)
+                    var builder = ClientApplication.AcquireTokenInteractive(msalAuthProviderOption.Scopes)
                         .WithAccount(account)
                         .WithPrompt(Prompt)
                         .WithExtraQueryParameters(extraQueryParameter)
@@ -180,7 +207,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
 
             return authenticationResult;

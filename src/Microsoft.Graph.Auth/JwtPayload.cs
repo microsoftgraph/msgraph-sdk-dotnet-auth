@@ -6,7 +6,6 @@ namespace Microsoft.Graph.Auth
 {
     using System;
     using Newtonsoft.Json;
-
     internal partial class JwtPayload
     {
         [JsonProperty("aud")]

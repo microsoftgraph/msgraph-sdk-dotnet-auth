@@ -4,6 +4,7 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
     using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
     using System;
@@ -11,24 +12,38 @@ namespace Microsoft.Graph.Auth
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by on behalf of flow.
     /// </summary>
-    public class OnBehalfOfProvider : MsalAuthenticationBase<IConfidentialClientApplication>, IAuthenticationProvider
+    public class OnBehalfOfProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IConfidentialClientApplication"/> property.
+        /// </summary>
+        internal IConfidentialClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// Constructs a new <see cref="OnBehalfOfProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="OnBehalfOfProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
-        public OnBehalfOfProvider(
-            IConfidentialClientApplication confidentialClientApplication,
-            IEnumerable<string> scopes = null)
-            : base(scopes)
+        public OnBehalfOfProvider(IConfidentialClientApplication confidentialClientApplication, IEnumerable<string> scopes = null)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -44,15 +59,20 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             msalAuthProviderOption.UserAccount = GetGraphUserAccountFromJwt(msalAuthProviderOption.UserAssertion?.Assertion);
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
 
-            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
             if (authenticationResult == null)
+            {
                 authenticationResult = await GetNewAccessTokenAsync(msalAuthProviderOption);
+            }
 
-            if(!string.IsNullOrEmpty(authenticationResult.AccessToken))
+            if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
+            {
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            }
         }
 
         /// <summary>
@@ -78,7 +98,7 @@ namespace Microsoft.Graph.Auth
             };
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -122,7 +142,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
         }

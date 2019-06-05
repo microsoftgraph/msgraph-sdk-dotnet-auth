@@ -4,7 +4,6 @@
 
 namespace Microsoft.Graph.Auth
 {
-    using System.Collections.Generic;
     internal static class AuthConstants
     {
         internal const string DefaultScopeUrl = "https://graph.microsoft.com/.default";

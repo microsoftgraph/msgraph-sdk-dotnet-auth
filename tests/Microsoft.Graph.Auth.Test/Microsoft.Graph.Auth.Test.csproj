@@ -16,6 +16,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Graph.Auth\Microsoft.Graph.Auth.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Graph.Auth\Microsoft.Graph.Auth.csproj" />
   </ItemGroup>
 </Project>
