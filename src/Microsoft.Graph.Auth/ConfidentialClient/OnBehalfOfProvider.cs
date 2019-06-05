@@ -106,7 +106,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await ClientApplication.AcquireTokenOnBehalfOf(msalAuthProviderOption.Scopes ?? Scopes, msalAuthProviderOption.UserAssertion)
+                    authenticationResult = await ClientApplication.AcquireTokenOnBehalfOf(msalAuthProviderOption.Scopes, msalAuthProviderOption.UserAssertion)
                         .WithAuthority(ClientApplication.Authority)
                         .ExecuteAsync();
                     break;

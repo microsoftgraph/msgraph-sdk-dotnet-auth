@@ -91,7 +91,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await ClientApplication.AcquireTokenWithDeviceCode(msalAuthProviderOption.Scopes ?? Scopes, DeviceCodeResultCallback)
+                    authenticationResult = await ClientApplication.AcquireTokenWithDeviceCode(msalAuthProviderOption.Scopes, DeviceCodeResultCallback)
                         .WithExtraQueryParameters(extraQueryParameter)
                         .ExecuteAsync(cancellationToken);
                     break;

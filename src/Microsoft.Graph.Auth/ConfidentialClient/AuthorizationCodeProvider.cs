@@ -33,9 +33,7 @@ namespace Microsoft.Graph.Auth
         /// </summary>
         /// <param name="confidentialClientApplication"><see cref="IConfidentialClientApplication"/> used to authentication requests.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default if none is set.</param>
-        public AuthorizationCodeProvider(
-            IConfidentialClientApplication confidentialClientApplication,
-            IEnumerable<string> scopes = null)
+        public AuthorizationCodeProvider(IConfidentialClientApplication confidentialClientApplication, IEnumerable<string> scopes = null)
         {
             Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
             if (Scopes.Count() == 0)

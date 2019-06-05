@@ -81,7 +81,7 @@ namespace Microsoft.Graph.Auth
                 try
                 {
                     if (!string.IsNullOrEmpty(msalAuthProviderOption.UserAccount?.Email))
-                        authenticationResult = await ClientApplication.AcquireTokenByIntegratedWindowsAuth(msalAuthProviderOption.Scopes ?? Scopes)
+                        authenticationResult = await ClientApplication.AcquireTokenByIntegratedWindowsAuth(msalAuthProviderOption.Scopes)
                                 .WithUsername(msalAuthProviderOption.UserAccount.Email)
                                 .ExecuteAsync();
                     else

@@ -83,7 +83,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await ClientApplication.AcquireTokenByUsernamePassword(msalAuthProviderOption.Scopes ?? Scopes, msalAuthProviderOption.UserAccount?.Email, ToSecureString(msalAuthProviderOption.Password))
+                    authenticationResult = await ClientApplication.AcquireTokenByUsernamePassword(msalAuthProviderOption.Scopes, msalAuthProviderOption.UserAccount?.Email, msalAuthProviderOption.Password)
                         .ExecuteAsync();
                     break;
                 }
@@ -121,19 +121,6 @@ namespace Microsoft.Graph.Auth
             } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
-        }
-
-        private SecureString ToSecureString(string password)
-        {
-            if (string.IsNullOrEmpty(password))
-                return null;
-
-            SecureString secureString = new SecureString();
-            foreach (char item in password)
-            {
-                secureString.AppendChar(item);
-            }
-            return secureString;
         }
     }
 }

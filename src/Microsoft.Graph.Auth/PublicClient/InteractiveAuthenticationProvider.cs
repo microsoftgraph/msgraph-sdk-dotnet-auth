@@ -93,11 +93,7 @@ namespace Microsoft.Graph.Auth
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="prompt">Designed interactive experience for the user. Defaults to <see cref="Prompt.SelectAccount"/>.</param>
         /// <param name="parent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
-        public InteractiveAuthenticationProvider(
-            IPublicClientApplication publicClientApplication,
-            IEnumerable<string> scopes = null,
-            Prompt? prompt = null,
-            object parent = null)
+        public InteractiveAuthenticationProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null, Prompt? prompt = null, object parent = null)
         {
             Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
             if (Scopes.Count() == 0)

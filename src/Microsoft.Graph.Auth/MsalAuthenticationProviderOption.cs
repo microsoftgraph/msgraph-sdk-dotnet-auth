@@ -5,6 +5,7 @@
 namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
+    using System.Security;
 
     /// <summary>
     /// Options class used to configure the authentication providers.
@@ -37,8 +38,8 @@ namespace Microsoft.Graph.Auth
         public UserAssertion UserAssertion { get; set; }
 
         /// <summary>
-        /// Password to use when authenticating.
+        /// Password to use when authenticating with UsernamePasswordProvider.
         /// </summary>
-        public string Password { get; set; }
+        public SecureString Password { get; set; }
     }
 }
