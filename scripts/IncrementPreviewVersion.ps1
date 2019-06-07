@@ -27,7 +27,7 @@ $xmlDoc = New-Object System.Xml.XmlDocument
 $xmlDoc.Load($projectPath)
 
 # Assumption: VersionSuffix is set in the first property group.
-$versionSuffixString = $xmlDoc.Project.PropertyGroup[0].VersionSuffix
+$versionSuffixString = $xmlDoc.Project.PropertyGroup.VersionSuffix
 
 # Don't do anything if a VersionSuffix has been set in the .csproj.
 if ($versionSuffixString -ne '' -and $versionSuffixString -ne $null) {
@@ -41,7 +41,7 @@ if ($versionSuffixString -ne '' -and $versionSuffixString -ne $null) {
 if ($versionSuffixString -eq $null) {
     Write-Host "The VersionSuffix element had been deleted from the csproj. Adding it back."
     $newVersionSuffixElement = $xmlDoc.CreateElement("VersionSuffix")
-    $newElement = $xmlDoc.Project.PropertyGroup[0].AppendChild($newVersionSuffixElement)
+    $newElement = $xmlDoc.Project.PropertyGroup.AppendChild($newVersionSuffixElement)
 }
 
 # API is case-sensitive
@@ -74,5 +74,5 @@ else {
 
 Write-Host "The preview version is now $versionSuffixString" -ForegroundColor Green
 
-$xmlDoc.Project.PropertyGroup[0].VersionSuffix = $versionSuffixString
+$xmlDoc.Project.PropertyGroup.VersionSuffix = $versionSuffixString
 $xmlDoc.Save($projectPath)
