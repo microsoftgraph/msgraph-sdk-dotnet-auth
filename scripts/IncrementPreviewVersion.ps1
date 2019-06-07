@@ -26,7 +26,7 @@ Param(
 $xmlDoc = New-Object System.Xml.XmlDocument
 $xmlDoc.Load($projectPath)
 
-# Assumption: VersionSuffix is set in the first property group.
+# Assumption: VersionSuffix is set in the ONLY property group.
 $versionSuffixString = $xmlDoc.Project.PropertyGroup.VersionSuffix
 
 # Don't do anything if a VersionSuffix has been set in the .csproj.
