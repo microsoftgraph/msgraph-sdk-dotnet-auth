@@ -21,7 +21,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// A <see cref="IPublicClientApplication"/> property.
         /// </summary>
-        internal IPublicClientApplication ClientApplication { get; set; }
+        public IPublicClientApplication ClientApplication { get; set; }
 
         /// <summary>
         /// A scopes property.

@@ -12,9 +12,6 @@ namespace Microsoft.Graph.Auth
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
-#if NET45
-    using System.Windows.Forms;
-#endif
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token interactively
@@ -24,7 +21,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// A <see cref="IPublicClientApplication"/> property.
         /// </summary>
-        internal IPublicClientApplication ClientApplication { get; set; }
+        public IPublicClientApplication ClientApplication { get; set; }
 
         /// <summary>
         /// A scopes property.
@@ -40,7 +37,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Parent activity or window.
         /// </summary>
-        public IWin32Window ParentWindow { get; set; }
+        public System.Windows.Forms.IWin32Window ParentWindow { get; set; }
 
         /// <summary>
         /// Parent activity or window.
@@ -59,7 +56,7 @@ namespace Microsoft.Graph.Auth
             IPublicClientApplication publicClientApplication,
             IEnumerable<string> scopes = null,
             Prompt? prompt = null,
-            IWin32Window window = null,
+            System.Windows.Forms.IWin32Window window = null,
             IntPtr pointer = default(IntPtr))
         {
             Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };

@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.Graph.Auth.Test.PublicClient
 {
-    using Microsoft.Graph.Auth.Test.Extensions;
     using Microsoft.Identity.Client;
     using Moq;
     using System.Collections.Generic;

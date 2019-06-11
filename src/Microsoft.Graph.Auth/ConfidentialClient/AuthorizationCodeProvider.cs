@@ -21,7 +21,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// A <see cref="IConfidentialClientApplication"/> property.
         /// </summary>
-        internal IConfidentialClientApplication ClientApplication { get; set; }
+        public IConfidentialClientApplication ClientApplication { get; set; }
 
         /// <summary>
         /// A scopes property.
@@ -76,6 +76,16 @@ namespace Microsoft.Graph.Auth
             }
 
             httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+        }
+
+        /// <summary>
+        /// Helper used in Startup class to retrieve a token from an authorization code.
+        /// </summary>
+        /// <param name="authorizationCode">An authorization code received from an openid connect auth flow.</param>
+        /// <returns></returns>
+        public async Task<AuthenticationResult> GetAccessTokenByAuthorizationCode(string authorizationCode)
+        {
+            return await ClientApplication.AcquireTokenByAuthorizationCode(Scopes, authorizationCode).ExecuteAsync();
         }
     }
 }

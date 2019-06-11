@@ -1,12 +1,9 @@
 ﻿namespace Microsoft.Graph.Auth.Test.PublicClient
 {
-    using Microsoft.Graph.Auth.Test.Extensions;
     using Microsoft.Identity.Client;
     using Moq;
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
     using Xunit;
 
     public class IntegratedWindowsAuthenticationProviderTests

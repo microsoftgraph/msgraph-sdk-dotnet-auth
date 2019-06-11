@@ -22,7 +22,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// A <see cref="IConfidentialClientApplication"/> property.
         /// </summary>
-        internal IConfidentialClientApplication ClientApplication { get; set; }
+        public IConfidentialClientApplication ClientApplication { get; set; }
 
         /// <summary>
         /// A scopes property.

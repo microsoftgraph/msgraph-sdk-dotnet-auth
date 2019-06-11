@@ -1,12 +1,7 @@
 ﻿namespace Microsoft.Graph.Auth.Test.ConfidentialClient
 {
-    using Microsoft.Graph.Auth.Test.Extensions;
     using Microsoft.Identity.Client;
-    using Moq;
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Security.Cryptography.X509Certificates;
     using Xunit;
 
     public class ClientCredentialProviderTests
