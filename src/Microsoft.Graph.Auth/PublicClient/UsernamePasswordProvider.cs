@@ -34,7 +34,7 @@ namespace Microsoft.Graph.Auth
         /// Constructs a new <see cref="UsernamePasswordProvider"/>. This provider is NOT RECOMMENDED because it exposes the users password.
         /// We recommend you use <see cref="IntegratedWindowsAuthenticationProvider"/> instead.
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="UsernamePasswordProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         public UsernamePasswordProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null)
         {

@@ -6,17 +6,14 @@
     <AssemblyVersion>0.1.0</AssemblyVersion>
     <Authors>Microsoft</Authors>
     <Company>Microsoft Corporation</Company>
-    <TargetFrameworks>netstandard1.3;net45;</TargetFrameworks>
+    <TargetFrameworks>netstandard1.3;net45</TargetFrameworks>
     <AssemblyName>Microsoft.Graph.Auth</AssemblyName>
     <PackageId>Microsoft.Graph.Auth</PackageId>
     <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK;MSAL</PackageTags>
     <PackageReleaseNotes>
-Release Summary
-
-- New feature - Adds default scope url support when no scope is provided.
-- Fix - Setting token cache on mobile platforms.
-- Fix - Empty redirect url exception when using confidential client provider.
-- Fix - User mismatch exception when using on behalf of provider.
+      - Update all authentication providers to use MSAL V3+.
+      - Update UsernamePasswordProvider to use SecureString for passwords.
+      - Remove ITokenStorageProvider interface.
     </PackageReleaseNotes>
     <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
     <PackageLicenseUrl>http://aka.ms/devservicesagreement</PackageLicenseUrl>
@@ -25,7 +22,7 @@ Release Summary
     <SignAssembly>false</SignAssembly>
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <VersionSuffix>preview.2</VersionSuffix>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>

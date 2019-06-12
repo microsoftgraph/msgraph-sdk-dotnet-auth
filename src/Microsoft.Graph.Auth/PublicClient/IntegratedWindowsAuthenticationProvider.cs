@@ -31,7 +31,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="IntegratedWindowsAuthenticationProvider"/>
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="IntegratedWindowsAuthenticationProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         public IntegratedWindowsAuthenticationProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null)
         {

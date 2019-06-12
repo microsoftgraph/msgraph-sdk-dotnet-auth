@@ -47,7 +47,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="InteractiveAuthenticationProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="prompt">Designed interactive experience for the user. Defaults to <see cref="Prompt.SelectAccount"/>.</param>
         /// <param name="window">Object containing a reference to the parent window/activity.</param>
@@ -86,7 +86,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Constructs a new <see cref="InteractiveAuthenticationProvider"/>
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="InteractiveAuthenticationProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="prompt">Designed interactive experience for the user. Defaults to <see cref="Prompt.SelectAccount"/>.</param>
         /// <param name="parent">Object containing a reference to the parent window/activity. REQUIRED for Xamarin.Android only.</param>
