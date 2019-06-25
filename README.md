@@ -1,5 +1,5 @@
 # Microsoft Graph .NET Authentication Provider Library
-[![Build status](https://o365exchange.visualstudio.com/O365%20Sandbox/_apis/build/status/Microsoft%20Graph/PR-msgraph-validate-sdk-dotnet-auth)](https://o365exchange.visualstudio.com/O365%20Sandbox/_build/latest?definitionId=0)
+[![Build status](https://o365exchange.visualstudio.com/O365%20Sandbox/_apis/build/status/Microsoft%20Graph/.Net/msgraph-sdk-dotnet-auth-build-and-packaging)](https://o365exchange.visualstudio.com/O365%20Sandbox/_build/latest?definitionId=2425)
 
 Microsoft Graph .NET authentication library provides a set of OAuth scenario-centric authentication providers that implement `Microsoft.Graph.IAuthenticationProvider` and uses Microsoft Authentication Library (MSAL) under the hood to handle access token acquisition and storage. It also exposes `BaseRequest` extension methods that are used to set per request authentication options to the providers.
 
@@ -8,7 +8,7 @@ Get started with Microsoft Graph .NET Authentication Provider Library by integra
 Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 2.7.1](https://www.nuget.org/packages/Microsoft.Identity.Client/2.7.1).
 # Installation via NuGet
 To install the authentication provider library via Nuget:
-- Search for `Microsoft.Graph.Auth` in NuGet or 
+- Search for `Microsoft.Graph.Auth` in NuGet or
 - Type `Install-Package Microsoft.Graph.Auth` into the Package Manager Console.
 # Getting Started
 ## 1. Register your application
