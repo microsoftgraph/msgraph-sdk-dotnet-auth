@@ -1,15 +1,12 @@
 ﻿namespace Microsoft.Graph.Auth.Test.PublicClient
 {
-    using Microsoft.Graph.Auth.Test.Extensions;
     using Microsoft.Identity.Client;
     using Moq;
-    using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
     using Xunit;
 
-    public class InteractiveAuthenticationProviderTests
+    public class DeviceCodeProviderTests
     {
         [Fact]
         public void ShouldConstructAuthProviderWithPublicClientApp()
@@ -23,11 +20,11 @@
                 .WithAuthority(authority)
                 .Build();
 
-            InteractiveAuthenticationProvider auth = new InteractiveAuthenticationProvider(publicClientApplication, scopes);
+            DeviceCodeProvider auth = new DeviceCodeProvider(publicClientApplication, scopes);
 
             Assert.IsAssignableFrom<IAuthenticationProvider>(auth);
             Assert.NotNull(auth.ClientApplication);
-            Assert.Equal(publicClientApplication, auth.ClientApplication);
+            Assert.Same(publicClientApplication, auth.ClientApplication);
         }
 
         [Fact]
@@ -35,24 +32,22 @@
         {
             IEnumerable<string> scopes = new List<string> { "User.ReadBasic.All" };
 
-            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new InteractiveAuthenticationProvider(null, scopes));
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new DeviceCodeProvider(null, scopes));
 
             Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);
-            Assert.Equal(ex.Error.Message, String.Format(ErrorConstants.Message.NullValue, "publicClientApplication"));
+            Assert.Equal(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "publicClientApplication"));
         }
 
         [Fact]
         public void ShouldUseDefaultScopeUrlWhenScopeIsNull()
         {
-            HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
-
             var mock = Mock.Of<IPublicClientApplication>();
 
-            InteractiveAuthenticationProvider authProvider = new InteractiveAuthenticationProvider(mock, null);
+            DeviceCodeProvider deviceCodeProvider = new DeviceCodeProvider(mock, null);
 
-            Assert.NotNull(authProvider.Scopes);
-            Assert.True(authProvider.Scopes.Count().Equals(1));
-            Assert.Equal(AuthConstants.DefaultScopeUrl, authProvider.Scopes.FirstOrDefault());
+            Assert.NotNull(deviceCodeProvider.Scopes);
+            Assert.True(deviceCodeProvider.Scopes.Count().Equals(1));
+            Assert.Equal(AuthConstants.DefaultScopeUrl, deviceCodeProvider.Scopes.FirstOrDefault());
         }
 
         [Fact]
@@ -60,7 +55,7 @@
         {
             var mock = Mock.Of<IPublicClientApplication>();
 
-            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new InteractiveAuthenticationProvider(mock, Enumerable.Empty<string>()));
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new DeviceCodeProvider(mock, Enumerable.Empty<string>()));
 
             Assert.Equal(ex.Error.Message, ErrorConstants.Message.EmptyScopes);
             Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);

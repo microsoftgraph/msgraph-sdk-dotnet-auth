@@ -4,9 +4,11 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
     using Microsoft.Identity.Client;
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading;
@@ -15,8 +17,18 @@ namespace Microsoft.Graph.Auth
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by device code.
     /// </summary>
-    public class DeviceCodeProvider : MsalAuthenticationBase<IPublicClientApplication>, IAuthenticationProvider
+    public class DeviceCodeProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IPublicClientApplication"/> property.
+        /// </summary>
+        public IPublicClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// DeviceCodeResultCallback property
         /// </summary>
@@ -28,12 +40,16 @@ namespace Microsoft.Graph.Auth
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="deviceCodeResultCallback">Callback containing information to show the user about how to authenticate and enter the device code.</param>
-        public DeviceCodeProvider(
-            IPublicClientApplication publicClientApplication,
-            IEnumerable<string> scopes = null,
-            Func<DeviceCodeResult, Task> deviceCodeResultCallback = null)
-            : base(scopes)
+        public DeviceCodeProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null, Func<DeviceCodeResult, Task> deviceCodeResultCallback = null)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -52,19 +68,21 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
-            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
+
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync(requestContext.CancellationToken, msalAuthProviderOption.Scopes);
+                authenticationResult = await GetNewAccessTokenAsync(requestContext.CancellationToken, msalAuthProviderOption);
             }
 
             if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken, string[] requestScopes)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken, AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -73,7 +91,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await ClientApplication.AcquireTokenWithDeviceCode(requestScopes ?? Scopes, DeviceCodeResultCallback)
+                    authenticationResult = await ClientApplication.AcquireTokenWithDeviceCode(msalAuthProviderOption.Scopes, DeviceCodeResultCallback)
                         .WithExtraQueryParameters(extraQueryParameter)
                         .ExecuteAsync(cancellationToken);
                     break;
@@ -114,7 +132,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
         }

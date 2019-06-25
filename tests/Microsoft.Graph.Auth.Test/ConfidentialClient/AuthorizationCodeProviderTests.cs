@@ -1,16 +1,13 @@
 ﻿namespace Microsoft.Graph.Auth.Test.ConfidentialClient
 {
-    using Microsoft.Graph.Auth.Test.Extensions;
     using Microsoft.Identity.Client;
     using Moq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
     using Xunit;
-
     public class AuthorizationCodeProviderTests
     {
         [Fact]
@@ -83,7 +80,7 @@
 
             AuthenticationException ex = await Assert.ThrowsAsync<AuthenticationException>(async () => await authCodeFlowProvider.AuthenticateRequestAsync(httpRequestMessage));
 
-            Assert.Equal(ex.Error.Message, ErrorConstants.Message.AuthenticationChallengeRequired);
+            Assert.Equal(ErrorConstants.Message.AuthenticationChallengeRequired, ex.Error.Message);
             Assert.IsAssignableFrom<IConfidentialClientApplication>(authCodeFlowProvider.ClientApplication);
             Assert.Null(httpRequestMessage.Headers.Authorization);
         }

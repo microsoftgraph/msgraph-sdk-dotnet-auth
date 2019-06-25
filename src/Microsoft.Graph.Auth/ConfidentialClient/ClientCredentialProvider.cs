@@ -6,23 +6,26 @@ namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
     using System;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by client credential flow.
     /// </summary>
-    public class ClientCredentialProvider : MsalAuthenticationBase<IConfidentialClientApplication>, IAuthenticationProvider
+    public class ClientCredentialProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IConfidentialClientApplication"/> property.
+        /// </summary>
+        public IConfidentialClientApplication ClientApplication { get; set; }
+
         /// <summary>
         /// Constructs a new <see cref=" ClientCredentialProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="ClientCredentialProvider"/> for authentication.</param>
-        public ClientCredentialProvider(
-            IConfidentialClientApplication confidentialClientApplication)
-            : base(null)
+        public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
         {
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
@@ -39,7 +42,7 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             int retryCount = 0;
             do
             {
@@ -84,7 +87,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
         }
     }
 }

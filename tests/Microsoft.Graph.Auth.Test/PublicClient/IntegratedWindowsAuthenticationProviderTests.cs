@@ -1,14 +1,12 @@
 ﻿namespace Microsoft.Graph.Auth.Test.PublicClient
 {
-    using Microsoft.Graph.Auth.Test.Extensions;
     using Microsoft.Identity.Client;
     using Moq;
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Xunit;
 
-    public class UsernamePasswordProviderTests
+    public class IntegratedWindowsAuthenticationProviderTests
     {
         [Fact]
         public void ShouldConstructAuthProviderWithPublicClientApp()
@@ -22,7 +20,7 @@
                 .WithAuthority(authority)
                 .Build();
 
-            UsernamePasswordProvider auth = new UsernamePasswordProvider(publicClientApplication, scopes);
+            IntegratedWindowsAuthenticationProvider auth = new IntegratedWindowsAuthenticationProvider(publicClientApplication, scopes);
 
             Assert.IsAssignableFrom<IAuthenticationProvider>(auth);
             Assert.NotNull(auth.ClientApplication);
@@ -34,10 +32,10 @@
         {
             IEnumerable<string> scopes = new List<string> { "User.ReadBasic.All" };
 
-            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new UsernamePasswordProvider(null, scopes));
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new IntegratedWindowsAuthenticationProvider(null, scopes));
 
             Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);
-            Assert.Equal(ex.Error.Message, String.Format(ErrorConstants.Message.NullValue, "publicClientApplication"));
+            Assert.Equal(ex.Error.Message, string.Format(ErrorConstants.Message.NullValue, "publicClientApplication"));
         }
 
         [Fact]
@@ -45,7 +43,7 @@
         {
             var mock = Mock.Of<IPublicClientApplication>();
 
-            UsernamePasswordProvider authProvider = new UsernamePasswordProvider(mock, null);
+            IntegratedWindowsAuthenticationProvider authProvider = new IntegratedWindowsAuthenticationProvider(mock, null);
 
             Assert.NotNull(authProvider.Scopes);
             Assert.True(authProvider.Scopes.Count().Equals(1));
@@ -57,7 +55,7 @@
         {
             var mock = Mock.Of<IPublicClientApplication>();
 
-            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new UsernamePasswordProvider(mock, Enumerable.Empty<string>()));
+            AuthenticationException ex = Assert.Throws<AuthenticationException>(() => new IntegratedWindowsAuthenticationProvider(mock, Enumerable.Empty<string>()));
 
             Assert.Equal(ex.Error.Message, ErrorConstants.Message.EmptyScopes);
             Assert.Equal(ex.Error.Code, ErrorConstants.Codes.InvalidRequest);

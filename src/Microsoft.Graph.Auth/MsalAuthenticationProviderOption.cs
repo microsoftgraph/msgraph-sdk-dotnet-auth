@@ -5,12 +5,18 @@
 namespace Microsoft.Graph.Auth
 {
     using Microsoft.Identity.Client;
+    using System.Security;
 
     /// <summary>
     /// Options class used to configure the authentication providers.
     /// </summary>
-    public class MsalAuthenticationProviderOption : IAuthenticationProviderOption
+    public class AuthenticationProviderOption : IAuthenticationProviderOption
     {
+        /// <summary>
+        /// A MaxRetry property.
+        /// </summary>
+        internal int MaxRetry { get; set; } = 1;
+
         /// <summary>
         /// Scopes to use when authenticating.
         /// </summary>
@@ -32,8 +38,8 @@ namespace Microsoft.Graph.Auth
         public UserAssertion UserAssertion { get; set; }
 
         /// <summary>
-        /// Password to use when authenticating.
+        /// Password to use when authenticating with UsernamePasswordProvider.
         /// </summary>
-        public string Password { get; set; }
+        public SecureString Password { get; set; }
     }
 }
