@@ -36,8 +36,7 @@ It uses [MSALs Authorization Code](https://github.com/AzureAD/microsoft-authenti
 IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
                 .Create(clientId)
                 .WithRedirectUri(redirectUri)
-                .WithClientSecret(clientSecret)
-                .WithAuthority(authority)
+                .WithClientSecret(clientSecret) // or .WithCertificate(certificate)
                 .Build();
 
 AuthorizationCodeProvider authenticationProvider = new AuthorizationCodeProvider(confidentialClientApplication, scopes);
@@ -50,9 +49,8 @@ This provider leverages on [MSALs Client Credential Flows](https://github.com/Az
 ```csharp
 IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
                 .Create(clientId)
-                .WithRedirectUri(redirectUri)
+                .WithTenantId(tenantID)
                 .WithClientSecret(clientSecret)
-                .WithAuthority(authority)
                 .Build();
 
 ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(confidentialClientApplication);
@@ -67,7 +65,6 @@ IConfidentialClientApplication confidentialClientApplication = ConfidentialClien
                 .Create(clientId)
                 .WithRedirectUri(redirectUri)
                 .WithClientSecret(clientSecret)
-                .WithAuthority(authority)
                 .Build();
 
 OnBehalfOfProvider authenticationProvider = new OnBehalfOfProvider(confidentialClientApplication, scopes);
@@ -83,7 +80,6 @@ This provider leverages [MSALs Device Code Flow](https://github.com/AzureAD/micr
 ```csharp
 IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
                 .Create(clientId)
-                .WithAuthority(authority)
                 .Build();
 
 DeviceCodeProvider authenticationProvider = new DeviceCodeProvider(publicClientApplication, scopes);
@@ -96,7 +92,7 @@ This provider leverages [MSALs Integrated Windows Authentication](https://github
 ```csharp
 IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
                 .Create(clientId)
-                .WithAuthority(authority)
+                .WithTenantId(tenantID)
                 .Build();
 
 IntegratedWindowsAuthenticationProvider authenticationProvider = new IntegratedWindowsAuthenticationProvider(publicClientApplication, scopes);
@@ -109,7 +105,6 @@ Refer to [MSALs interactive Authentication](https://github.com/AzureAD/microsoft
 ```csharp
 IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
                 .Create(clientId)
-                .WithAuthority(authority)
                 .Build();
 
 InteractiveAuthenticationProvider authenticationProvider = new InteractiveAuthenticationProvider(publicClientApplication, scopes);
@@ -121,7 +116,7 @@ This provider is used by desktop applications to acquire Microsoft Graph access 
 ```csharp
 IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
                 .Create(clientId)
-                .WithAuthority(authority)
+                .WithTenantId(tenantID)
                 .Build();
 
 UsernamePasswordProvider authenticationProvider = new UsernamePasswordProvider(publicClientApplication, scopes);
@@ -150,9 +145,8 @@ var drive = await graphServiceClient.Me.Drive.Request().GetAsync();
 // Create a client application.
 IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
                 .Create(clientId)
-                .WithRedirectUri(redirectUri)
+                .WithTenantId(tenantID)
                 .WithClientSecret(clientSecret)
-                .WithAuthority(authority)
                 .Build();
 // Create an authentication provider.
 ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(confidentialClientApplication);
