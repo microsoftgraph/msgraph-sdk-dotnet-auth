@@ -22,8 +22,8 @@
     <SignAssembly>false</SignAssembly>
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
-    <VersionPrefix>0.2.0</VersionPrefix>
-    <VersionSuffix>preview.2</VersionSuffix>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>preview.3</VersionSuffix>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
