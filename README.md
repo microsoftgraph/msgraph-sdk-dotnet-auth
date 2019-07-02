@@ -3,9 +3,9 @@
 
 Microsoft Graph .NET authentication library provides a set of OAuth scenario-centric authentication providers that implement `Microsoft.Graph.IAuthenticationProvider` and uses Microsoft Authentication Library (MSAL) under the hood to handle access token acquisition and storage. It also exposes `BaseRequest` extension methods that are used to set per request authentication options to the providers.
 
-Get started with Microsoft Graph .NET Authentication Provider Library by integrating Microsoft Graph API into your .Net application.
+[Get started with Microsoft Graph .NET Authentication Provider Library](https://docs.microsoft.com/en-us/graph/sdks/choose-authentication-providers?tabs=CS) by integrating Microsoft Graph API into your .Net application.
 
-Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 2.7.1](https://www.nuget.org/packages/Microsoft.Identity.Client/2.7.1).
+Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 3.0.8](https://www.nuget.org/packages/Microsoft.Identity.Client/3.0.8).
 # Installation via NuGet
 To install the authentication provider library via Nuget:
 - Search for `Microsoft.Graph.Auth` in NuGet or
@@ -33,9 +33,13 @@ Authorization code provider is used by Web Apps (ASP.NET & ASP.NET Core) to acqu
 It uses [MSALs Authorization Code](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-with-authorization-codes-on-web-apps) to authenticate Microsoft Graph requests.
 
 ```csharp
-IConfidentialClientApplication clientApplication = AuthorizationCodeProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(clientSecret) // or .WithCertificate(certificate)
+                .Build();
 
-AuthorizationCodeProvider authenticationProvider = new AuthorizationCodeProvider(clientApplication, scopes);
+AuthorizationCodeProvider authenticationProvider = new AuthorizationCodeProvider(confidentialClientApplication, scopes);
 ```
 
 #### b. Client credential provider
@@ -43,9 +47,13 @@ Client credential provider is used by services and desktop applications to acqui
 This provider leverages on [MSALs Client Credential Flows](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Client-credential-flows) to authenticate Microsoft Graph requests.
 
 ```csharp
-IConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, clientCredential);
+IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithTenantId(tenantID)
+                .WithClientSecret(clientSecret)
+                .Build();
 
-ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(clientApplication);
+ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(confidentialClientApplication);
 ```
 
 #### c. On behalf of provider
@@ -53,9 +61,13 @@ As the name suggests, on behalf of provider is used by services or daemons to ac
 This provider uses [MSALs On Behalf Of](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/on-behalf-of) to authenticate Microsoft Graph requests.
 
 ```csharp
-IConfidentialClientApplication clientApplication = OnBehalfOfProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
+IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithRedirectUri(redirectUri)
+                .WithClientSecret(clientSecret)
+                .Build();
 
-OnBehalfOfProvider authenticationProvider = new OnBehalfOfProvider(clientApplication, scopes);
+OnBehalfOfProvider authenticationProvider = new OnBehalfOfProvider(confidentialClientApplication, scopes);
 ```
 
 ### 2.2. Public Client Providers
@@ -66,9 +78,11 @@ Device code provider is used by desktop apps that run on devices without browser
 This provider leverages [MSALs Device Code Flow](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Device-Code-Flow) to authenticate Microsoft Graph requests.
 
 ```csharp
-IPublicClientApplication clientApplication = DeviceCodeProvider.CreateClientApplication(clientId);
+IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
+                .Create(clientId)
+                .Build();
 
-DeviceCodeProvider authenticationProvider = new DeviceCodeProvider(clientApplication, scopes);
+DeviceCodeProvider authenticationProvider = new DeviceCodeProvider(publicClientApplication, scopes);
 ```
 
 #### b. Integrated windows authentication provider
@@ -76,9 +90,12 @@ This provider is used by Windows hosted .NET applications running on computers j
 This provider leverages [MSALs Integrated Windows Authentication](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Integrated-Windows-Authentication) to authenticate Microsoft Graph requests.
 
 ```csharp
-IPublicClientApplication clientApplication = IntegratedWindowsAuthenticationProvider.CreateClientApplication(clientId);
+IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
+                .Create(clientId)
+                .WithTenantId(tenantID)
+                .Build();
 
-IntegratedWindowsAuthenticationProvider authenticationProvider = new IntegratedWindowsAuthenticationProvider(clientApplication, scopes);
+IntegratedWindowsAuthenticationProvider authenticationProvider = new IntegratedWindowsAuthenticationProvider(publicClientApplication, scopes);
 ```
 
 #### c. Interactive authentication provider
@@ -86,18 +103,23 @@ Interactive authentication provider is used by mobile applications (Xamarin and 
 Refer to [MSALs interactive Authentication](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Acquiring-tokens-interactively) on how to configure the provider for your platform of choice since each platform has its own specificities.
 
 ```csharp
-IPublicClientApplication clientApplication = InteractiveAuthenticationProvider.CreateClientApplication(clientId);
+IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
+                .Create(clientId)
+                .Build();
 
-InteractiveAuthenticationProvider authenticationProvider = new InteractiveAuthenticationProvider(clientApplication, scopes);
+InteractiveAuthenticationProvider authenticationProvider = new InteractiveAuthenticationProvider(publicClientApplication, scopes);
 ```
 
 #### d. Username password provider
 This provider is used by desktop applications to acquire Microsoft Graph access token by leveraging [MSALs Username Password](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Username-Password-Authentication) with the provider username (email) and password.
 
 ```csharp
-IPublicClientApplication clientApplication = UsernamePasswordProvider.CreateClientApplication(clientId);
+IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
+                .Create(clientId)
+                .WithTenantId(tenantID)
+                .Build();
 
-UsernamePasswordProvider authenticationProvider = new UsernamePasswordProvider(clientApplication, scopes);
+UsernamePasswordProvider authenticationProvider = new UsernamePasswordProvider(publicClientApplication, scopes);
 ```
 
 ## 3. Initialize Microsoft Graph service client with an authentication provider
@@ -120,10 +142,14 @@ var drive = await graphServiceClient.Me.Drive.Request().GetAsync();
 ## 1. Client credential provider
 
 ```csharp
-// Create client application.
-ConfidentialClientApplication clientApplication = ClientCredentialProvider.CreateClientApplication(clientId, redirectUri, clientCredential);
-// Create authentication provider.
-ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(clientApplication);
+// Create a client application.
+IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithTenantId(tenantID)
+                .WithClientSecret(clientSecret)
+                .Build();
+// Create an authentication provider.
+ClientCredentialProvider authenticationProvider = new ClientCredentialProvider(confidentialClientApplication);
 // Configure GraphServiceClient with provider.
 GraphServiceClient graphServiceClient = new GraphServiceClient(authenticationProvider);
 // Make a request

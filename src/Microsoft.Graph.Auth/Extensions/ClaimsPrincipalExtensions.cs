@@ -5,8 +5,18 @@
 namespace Microsoft.Graph.Auth
 {
     using System.Security.Claims;
+
+    /// <summary>
+    /// Extension methods for the <see cref="System.Security.Claims.ClaimsPrincipal"/> class.
+    /// </summary>
     public static class ClaimsPrincipalExtensions
     {
+        /// <summary>
+        /// Converts an instance of the <see cref="System.Security.Claims.ClaimsPrincipal"/> class to an
+        /// instance of the <see cref="Microsoft.Graph.GraphUserAccount"/> class.
+        /// </summary>
+        /// <param name="claimsPrincipal"></param>
+        /// <returns></returns>
         public static GraphUserAccount ToGraphUserAccount(this ClaimsPrincipal claimsPrincipal)
         {
             if (claimsPrincipal == null)

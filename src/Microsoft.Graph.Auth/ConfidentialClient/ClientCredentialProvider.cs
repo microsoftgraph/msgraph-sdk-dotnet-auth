@@ -4,9 +4,9 @@
 
 namespace Microsoft.Graph.Auth
 {
-    using Microsoft.Graph.Auth.Helpers;
     using Microsoft.Identity.Client;
     using System;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
@@ -14,14 +14,18 @@ namespace Microsoft.Graph.Auth
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by client credential flow.
     /// </summary>
-    public class ClientCredentialProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class ClientCredentialProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IConfidentialClientApplication"/> property.
+        /// </summary>
+        public IConfidentialClientApplication ClientApplication { get; set; }
+
         /// <summary>
         /// Constructs a new <see cref=" ClientCredentialProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="ClientCredentialProvider"/> for authentication.</param>
         public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
-            : base(null)
         {
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
@@ -32,48 +36,21 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Creates a new <see cref="IConfidentialClientApplication"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app)</param>
-        /// <param name="clientCredential">A <see cref="Microsoft.Identity.Client.ClientCredential"/> created either from an application secret or a certificate</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token. </param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com) </param>
-        /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IConfidentialClientApplication CreateClientApplication(string clientId,
-            ClientCredential clientCredential,
-            ITokenStorageProvider tokenStorageProvider = null,
-            string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
-                    });
-
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new ConfidentialClientApplication(clientId, authority, "https://replyUrl", clientCredential, null, tokenCacheProvider.GetTokenCacheInstnce());
-        }
-
-        /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token. If a token is not found or expired, it gets a new one.
         /// </summary>
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             int retryCount = 0;
             do
             {
                 try
                 {
-                    AuthenticationResult authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenForClientAsync(new string[] { AuthConstants.DefaultScopeUrl }, msalAuthProviderOption.ForceRefresh);
+                    AuthenticationResult authenticationResult = await ClientApplication.AcquireTokenForClient(new string[] { AuthConstants.DefaultScopeUrl })
+                        .WithForceRefresh(msalAuthProviderOption.ForceRefresh)
+                        .ExecuteAsync();
 
                     if (!string.IsNullOrEmpty(authenticationResult?.AccessToken))
                         httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
@@ -110,7 +87,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
         }
     }
 }

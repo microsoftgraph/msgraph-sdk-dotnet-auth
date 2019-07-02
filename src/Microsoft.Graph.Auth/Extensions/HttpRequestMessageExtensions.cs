@@ -5,13 +5,14 @@
 namespace Microsoft.Graph.Auth
 {
     using System.Net.Http;
+
     internal static class HttpRequestMessageExtensions
     {
-        internal static MsalAuthenticationProviderOption GetMsalAuthProviderOption(this HttpRequestMessage httpRequestMessage)
+        internal static AuthenticationProviderOption GetMsalAuthProviderOption(this HttpRequestMessage httpRequestMessage)
         {
             AuthenticationHandlerOption authHandlerOption = httpRequestMessage.GetMiddlewareOption<AuthenticationHandlerOption>();
 
-            return authHandlerOption?.AuthenticationProviderOption as MsalAuthenticationProviderOption ?? new MsalAuthenticationProviderOption();
+            return authHandlerOption?.AuthenticationProviderOption as AuthenticationProviderOption ?? new AuthenticationProviderOption();
         }
     }
 }

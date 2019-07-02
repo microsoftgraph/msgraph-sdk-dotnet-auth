@@ -4,63 +4,54 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
+    using Microsoft.Identity.Client;
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Security;
     using System.Threading.Tasks;
-    using Microsoft.Graph.Auth.Helpers;
-    using Microsoft.Identity.Client;
+
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by username and password.
     /// This only works with work and school accounts.
     /// </summary>
-    public class UsernamePasswordProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class UsernamePasswordProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IPublicClientApplication"/> property.
+        /// </summary>
+        public IPublicClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// Constructs a new <see cref="UsernamePasswordProvider"/>. This provider is NOT RECOMMENDED because it exposes the users password.
         /// We recommend you use <see cref="IntegratedWindowsAuthenticationProvider"/> instead.
         /// </summary>
-        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
+        /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="UsernamePasswordProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
-        public UsernamePasswordProvider(
-            IPublicClientApplication publicClientApplication,
-            string[] scopes = null)
-            : base(scopes)
+        public UsernamePasswordProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, "publicClientApplication")
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(publicClientApplication))
                     });
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="IPublicClientApplication"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token.</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>organizations</c> if non is specified.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IPublicClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IPublicClientApplication CreateClientApplication(string clientId,
-            ITokenStorageProvider tokenStorageProvider = null,
-            string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
-                    });
-
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
-            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
         }
 
         /// <summary>
@@ -70,9 +61,10 @@ namespace Microsoft.Graph.Auth
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
-            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
+
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
@@ -83,7 +75,7 @@ namespace Microsoft.Graph.Auth
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -91,8 +83,8 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await (ClientApplication as IPublicClientApplication)
-                        .AcquireTokenByUsernamePasswordAsync(msalAuthProviderOption.Scopes ?? Scopes, msalAuthProviderOption.UserAccount?.Email, ToSecureString(msalAuthProviderOption.Password));
+                    authenticationResult = await ClientApplication.AcquireTokenByUsernamePassword(msalAuthProviderOption.Scopes, msalAuthProviderOption.UserAccount?.Email, msalAuthProviderOption.Password)
+                        .ExecuteAsync();
                     break;
                 }
                 catch (MsalServiceException serviceException)
@@ -126,22 +118,9 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
-        }
-
-        private SecureString ToSecureString(string password)
-        {
-            if (string.IsNullOrEmpty(password))
-                return null;
-
-            SecureString secureString = new SecureString();
-            foreach (char item in password)
-            {
-                secureString.AppendChar(item);
-            }
-            return secureString;
         }
     }
 }

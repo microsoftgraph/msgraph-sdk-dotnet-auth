@@ -13,6 +13,7 @@ namespace Microsoft.Graph.Auth
         /// <summary>
         /// Gets retry after timespan from <see cref="RetryConditionHeaderValue"/>.
         /// </summary>
+        /// <param name="authProvider">An <see cref="IAuthenticationProvider"/> object.</param>
         /// <param name="serviceException">A <see cref="MsalServiceException"/> with RetryAfter header</param>
         internal static TimeSpan GetRetryAfter(this IAuthenticationProvider authProvider, MsalServiceException serviceException)
         {

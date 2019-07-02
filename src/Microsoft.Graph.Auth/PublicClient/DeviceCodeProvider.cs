@@ -4,19 +4,31 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
+    using Microsoft.Identity.Client;
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Graph.Auth.Helpers;
-    using Microsoft.Identity.Client;
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by device code.
     /// </summary>
-    public class DeviceCodeProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class DeviceCodeProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IPublicClientApplication"/> property.
+        /// </summary>
+        public IPublicClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// DeviceCodeResultCallback property
         /// </summary>
@@ -28,46 +40,24 @@ namespace Microsoft.Graph.Auth
         /// <param name="publicClientApplication">A <see cref="IPublicClientApplication"/> to pass to <see cref="DeviceCodeProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
         /// <param name="deviceCodeResultCallback">Callback containing information to show the user about how to authenticate and enter the device code.</param>
-        public DeviceCodeProvider(
-            IPublicClientApplication publicClientApplication,
-            string[] scopes = null,
-            Func<DeviceCodeResult, Task> deviceCodeResultCallback = null)
-            : base(scopes)
+        public DeviceCodeProvider(IPublicClientApplication publicClientApplication, IEnumerable<string> scopes = null, Func<DeviceCodeResult, Task> deviceCodeResultCallback = null)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = publicClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
                         Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, "publicClientApplication")
-                    });
-            DeviceCodeResultCallback = deviceCodeResultCallback ?? DefaultDeviceCallback;
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="IPublicClientApplication"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token.</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>organizations</c> if non is specified.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IPublicClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IPublicClientApplication CreateClientApplication(string clientId,
-            ITokenStorageProvider tokenStorageProvider = null,
-            string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
+                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(publicClientApplication))
                     });
 
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Organizations);
-            return new PublicClientApplication(clientId, authority, tokenCacheProvider.GetTokenCacheInstnce());
+            DeviceCodeResultCallback = deviceCodeResultCallback ?? (async (result) => await Console.Out.WriteLineAsync(result.Message));
         }
 
         /// <summary>
@@ -78,19 +68,21 @@ namespace Microsoft.Graph.Auth
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
             GraphRequestContext requestContext = httpRequestMessage.GetRequestContext();
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
-            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
+
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
 
             if (authenticationResult == null)
             {
-                authenticationResult = await GetNewAccessTokenAsync(requestContext.CancellationToken, msalAuthProviderOption.Scopes);
+                authenticationResult = await GetNewAccessTokenAsync(requestContext.CancellationToken, msalAuthProviderOption);
             }
 
             if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken, string[] requestScopes)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(CancellationToken cancellationToken, AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -99,11 +91,9 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await (ClientApplication as IPublicClientApplication).AcquireTokenWithDeviceCodeAsync(
-                        requestScopes ?? Scopes,
-                        extraQueryParameter,
-                        DeviceCodeResultCallback,
-                        cancellationToken);
+                    authenticationResult = await ClientApplication.AcquireTokenWithDeviceCode(msalAuthProviderOption.Scopes, DeviceCodeResultCallback)
+                        .WithExtraQueryParameters(extraQueryParameter)
+                        .ExecuteAsync(cancellationToken);
                     break;
                 }
                 catch (MsalServiceException serviceException)
@@ -142,15 +132,9 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
-        }
-
-        private async Task DefaultDeviceCallback(DeviceCodeResult result)
-        {
-            Console.WriteLine(result.Message);
-            await Task.FromResult(0);
         }
     }
 }

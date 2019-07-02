@@ -4,29 +4,46 @@
 
 namespace Microsoft.Graph.Auth
 {
+    using Microsoft.Graph.Auth.Extensions;
+    using Microsoft.Graph.Auth.Helpers;
+    using Microsoft.Identity.Client;
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Threading.Tasks;
-    using Microsoft.Graph.Auth.Helpers;
-    using Microsoft.Identity.Client;
 
     /// <summary>
     /// An <see cref="IAuthenticationProvider"/> implementation using MSAL.Net to acquire token by on behalf of flow.
     /// </summary>
-    public class OnBehalfOfProvider : MsalAuthenticationBase, IAuthenticationProvider
+    public class OnBehalfOfProvider : IAuthenticationProvider
     {
+        /// <summary>
+        /// A <see cref="IConfidentialClientApplication"/> property.
+        /// </summary>
+        public IConfidentialClientApplication ClientApplication { get; set; }
+
+        /// <summary>
+        /// A scopes property.
+        /// </summary>
+        internal IEnumerable<string> Scopes { get; set; }
+
         /// <summary>
         /// Constructs a new <see cref="OnBehalfOfProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="OnBehalfOfProvider"/> for authentication.</param>
         /// <param name="scopes">Scopes required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
-        public OnBehalfOfProvider(
-            IConfidentialClientApplication confidentialClientApplication,
-            string[] scopes = null)
-            : base(scopes)
+        public OnBehalfOfProvider(IConfidentialClientApplication confidentialClientApplication, IEnumerable<string> scopes = null)
         {
+            Scopes = scopes ?? new List<string> { AuthConstants.DefaultScopeUrl };
+            if (Scopes.Count() == 0)
+            {
+                throw new AuthenticationException(
+                    new Error { Code = ErrorConstants.Codes.InvalidRequest, Message = ErrorConstants.Message.EmptyScopes },
+                    new ArgumentException());
+            }
+
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -36,61 +53,26 @@ namespace Microsoft.Graph.Auth
         }
 
         /// <summary>
-        /// Creates a new <see cref="IConfidentialClientApplication"/>
-        /// </summary>
-        /// <param name="clientId">Client ID (also known as <i>Application ID</i>) of the application as registered in the application registration portal (https://aka.ms/msal-net-register-app).</param>
-        /// <param name="redirectUri">also named <i>Reply URI</i>, the redirect URI is the URI where the STS (Security Token Service) will call back the application
-        ///  with the security token. For details see https://aka.ms/msal-net-client-applications.</param>
-        /// <param name="clientCredential">A <see cref="Microsoft.Identity.Client.ClientCredential"/> created either from an application secret or a certificate.</param>
-        /// <param name="tokenStorageProvider">A <see cref="ITokenStorageProvider"/> for storing and retrieving access token.</param>
-        /// <param name="tenant">Tenant to sign-in users. This defaults to <c>common</c> if non is specified.</param>
-        /// <param name="nationalCloud">A <see cref="NationalCloud"/> which identifies the national cloud endpoint to use as the authority. This defaults to the global cloud <see cref="NationalCloud.Global"/> (https://login.microsoftonline.com).</param>
-        /// <returns>A <see cref="IConfidentialClientApplication"/></returns>
-        /// <exception cref="AuthenticationException"/>
-        public static IConfidentialClientApplication CreateClientApplication(string clientId,
-            string redirectUri,
-            ClientCredential clientCredential,
-            ITokenStorageProvider tokenStorageProvider = null,
-            string tenant = null,
-            NationalCloud nationalCloud = NationalCloud.Global)
-        {
-            if (string.IsNullOrEmpty(clientId))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(clientId))
-                    });
-
-            if (string.IsNullOrEmpty(redirectUri))
-                throw new AuthenticationException(
-                    new Error
-                    {
-                        Code = ErrorConstants.Codes.InvalidRequest,
-                        Message = string.Format(ErrorConstants.Message.NullValue, nameof(redirectUri))
-                    });
-
-            TokenCacheProvider tokenCacheProvider = new TokenCacheProvider(tokenStorageProvider);
-            string authority = NationalCloudHelpers.GetAuthority(nationalCloud, tenant ?? AuthConstants.Tenants.Common);
-            return new ConfidentialClientApplication(clientId, authority, redirectUri, clientCredential, tokenCacheProvider.GetTokenCacheInstnce(), null);
-        }
-
-        /// <summary>
         /// Adds an authentication header to the incoming request by checking the application's <see cref="TokenCache"/>
         /// for an unexpired access token. If a token is not found or expired, it gets a new one.
         /// </summary>
         /// <param name="httpRequestMessage">A <see cref="HttpRequestMessage"/> to authenticate.</param>
         public async Task AuthenticateRequestAsync(HttpRequestMessage httpRequestMessage)
         {
-            MsalAuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
+            AuthenticationProviderOption msalAuthProviderOption = httpRequestMessage.GetMsalAuthProviderOption();
             msalAuthProviderOption.UserAccount = GetGraphUserAccountFromJwt(msalAuthProviderOption.UserAssertion?.Assertion);
+            msalAuthProviderOption.Scopes = msalAuthProviderOption.Scopes ?? Scopes.ToArray();
 
-            AuthenticationResult authenticationResult = await GetAccessTokenSilentAsync(msalAuthProviderOption);
+            AuthenticationResult authenticationResult = await ClientApplication.GetAccessTokenSilentAsync(msalAuthProviderOption);
             if (authenticationResult == null)
+            {
                 authenticationResult = await GetNewAccessTokenAsync(msalAuthProviderOption);
+            }
 
-            if(!string.IsNullOrEmpty(authenticationResult.AccessToken))
+            if (!string.IsNullOrEmpty(authenticationResult.AccessToken))
+            {
                 httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(CoreConstants.Headers.Bearer, authenticationResult.AccessToken);
+            }
         }
 
         /// <summary>
@@ -116,7 +98,7 @@ namespace Microsoft.Graph.Auth
             };
         }
 
-        private async Task<AuthenticationResult> GetNewAccessTokenAsync(MsalAuthenticationProviderOption msalAuthProviderOption)
+        private async Task<AuthenticationResult> GetNewAccessTokenAsync(AuthenticationProviderOption msalAuthProviderOption)
         {
             AuthenticationResult authenticationResult = null;
             int retryCount = 0;
@@ -124,7 +106,9 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    authenticationResult = await (ClientApplication as IConfidentialClientApplication).AcquireTokenOnBehalfOfAsync(msalAuthProviderOption.Scopes ?? Scopes, msalAuthProviderOption.UserAssertion, ClientApplication.Authority);
+                    authenticationResult = await ClientApplication.AcquireTokenOnBehalfOf(msalAuthProviderOption.Scopes, msalAuthProviderOption.UserAssertion)
+                        .WithAuthority(ClientApplication.Authority)
+                        .ExecuteAsync();
                     break;
                 }
                 catch (MsalServiceException serviceException)
@@ -158,7 +142,7 @@ namespace Microsoft.Graph.Auth
                             exception);
                 }
 
-            } while (retryCount < MaxRetry);
+            } while (retryCount < msalAuthProviderOption.MaxRetry);
 
             return authenticationResult;
         }
