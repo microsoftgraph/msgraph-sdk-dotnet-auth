@@ -23,7 +23,7 @@
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
     <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>preview.0</VersionSuffix>
+    <VersionSuffix>preview.1</VersionSuffix>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
