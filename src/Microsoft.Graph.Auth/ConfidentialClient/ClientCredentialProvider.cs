@@ -17,6 +17,10 @@ namespace Microsoft.Graph.Auth
     public class ClientCredentialProvider : IAuthenticationProvider
     {
         /// <summary>
+        ///  A Scope property
+        /// </summary>
+        public string Scope { get; set; }
+        /// <summary>
         /// A <see cref="IConfidentialClientApplication"/> property.
         /// </summary>
         public IConfidentialClientApplication ClientApplication { get; set; }
@@ -25,8 +29,11 @@ namespace Microsoft.Graph.Auth
         /// Constructs a new <see cref=" ClientCredentialProvider"/>
         /// </summary>
         /// <param name="confidentialClientApplication">A <see cref="IConfidentialClientApplication"/> to pass to <see cref="ClientCredentialProvider"/> for authentication.</param>
-        public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication)
+        /// <param name="scope">Scope required to access Microsoft Graph. This defaults to https://graph.microsoft.com/.default when none is set.</param>
+        public ClientCredentialProvider(IConfidentialClientApplication confidentialClientApplication, string scope = AuthConstants.DefaultScopeUrl)
         {
+            Scope = scope ?? AuthConstants.DefaultScopeUrl;
+
             ClientApplication = confidentialClientApplication ?? throw new AuthenticationException(
                     new Error
                     {
@@ -48,7 +55,7 @@ namespace Microsoft.Graph.Auth
             {
                 try
                 {
-                    AuthenticationResult authenticationResult = await ClientApplication.AcquireTokenForClient(new string[] { AuthConstants.DefaultScopeUrl })
+                    AuthenticationResult authenticationResult = await ClientApplication.AcquireTokenForClient(new string[] { Scope })
                         .WithForceRefresh(msalAuthProviderOption.ForceRefresh)
                         .ExecuteAsync();
 
