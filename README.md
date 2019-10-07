@@ -8,8 +8,8 @@ Microsoft Graph .NET authentication library provides a set of OAuth scenario-cen
 Microsoft Graph .NET Authentication Provider Library targets .NetStandard 1.3 and depends on [Microsoft.Identity.Client 3.0.8](https://www.nuget.org/packages/Microsoft.Identity.Client/3.0.8).
 # Installation via NuGet
 To install the authentication provider library via Nuget:
-- Search for `Microsoft.Graph.Auth` in NuGet or
-- Type `Install-Package Microsoft.Graph.Auth` into the Package Manager Console.
+- Search for `Microsoft.Graph.Auth` in NuGet as a prerelease package or
+- Type `Install-Package Microsoft.Graph.Auth -PreRelease` into the Package Manager Console.
 # Getting Started
 ## 1. Register your application
 Register your application to use Microsoft Graph API using one of the following
