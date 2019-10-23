@@ -15,11 +15,16 @@ namespace Microsoft.Graph.Auth.Extensions
     /// </summary>
     public static class IClientApplicationBaseExtensions
     {
-        /// <summary>
-        /// Attempts to acquire access token silently from the token cache.
-        /// </summary>
-        /// <exception cref="AuthenticationException">An exception occured when attempting to get access token silently.</exception>
-        internal static async Task<AuthenticationResult> GetAccessTokenSilentAsync(this IClientApplicationBase clientApplication, AuthenticationProviderOption msalAuthProviderOption)
+        private static List<string> WellKnownTenants = new List<string>
+            {   AuthConstants.Tenants.Common,
+                AuthConstants.Tenants.Consumers,
+                AuthConstants.Tenants.Organizations
+            };
+    /// <summary>
+    /// Attempts to acquire access token silently from the token cache.
+    /// </summary>
+    /// <exception cref="AuthenticationException">An exception occured when attempting to get access token silently.</exception>
+    internal static async Task<AuthenticationResult> GetAccessTokenSilentAsync(this IClientApplicationBase clientApplication, AuthenticationProviderOption msalAuthProviderOption)
         {
             IAccount account;
             if (msalAuthProviderOption.UserAccount?.ObjectId != null)
@@ -44,7 +49,7 @@ namespace Microsoft.Graph.Auth.Extensions
                 AcquireTokenSilentParameterBuilder tokenSilentBuilder = clientApplication.AcquireTokenSilent(msalAuthProviderOption.Scopes, account)
                     .WithForceRefresh(msalAuthProviderOption.ForceRefresh);
 
-                if (ContainsWellKnownTenantName(clientApplication.Authority))
+                if (!ContainsWellKnownTenantName(clientApplication.Authority))
                     tokenSilentBuilder.WithAuthority(clientApplication.Authority);
 
                 return await tokenSilentBuilder.ExecuteAsync();
@@ -77,11 +82,7 @@ namespace Microsoft.Graph.Auth.Extensions
 
             Uri authorityUri = new Uri(currentAuthority);
 
-            return (new List<string>
-            {   AuthConstants.Tenants.Common,
-                AuthConstants.Tenants.Consumers,
-                AuthConstants.Tenants.Organizations
-            }).Contains(authorityUri.Segments[1].Replace(@"/", string.Empty));
+            return WellKnownTenants.Contains(authorityUri.Segments[1].Replace(@"/", string.Empty));
         }
     }
 }
