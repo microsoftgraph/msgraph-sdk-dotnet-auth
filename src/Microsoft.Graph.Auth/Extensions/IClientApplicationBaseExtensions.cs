@@ -41,10 +41,13 @@ namespace Microsoft.Graph.Auth.Extensions
 
             try
             {
-                return await clientApplication.AcquireTokenSilent(msalAuthProviderOption.Scopes, account)
-                        .WithAuthority(clientApplication.Authority)
-                        .WithForceRefresh(msalAuthProviderOption.ForceRefresh)
-                        .ExecuteAsync();
+                AcquireTokenSilentParameterBuilder tokenSilentBuilder = clientApplication.AcquireTokenSilent(msalAuthProviderOption.Scopes, account)
+                    .WithForceRefresh(msalAuthProviderOption.ForceRefresh);
+
+                if (IsSkipAuthority(clientApplication.Authority))
+                    tokenSilentBuilder.WithAuthority(clientApplication.Authority);
+
+                return await tokenSilentBuilder.ExecuteAsync();
             }
             catch (MsalException)
             {
@@ -60,6 +63,13 @@ namespace Microsoft.Graph.Auth.Extensions
                         },
                         exception);
             }
+        }
+
+        private static bool IsSkipAuthority(string currentAuthority)
+        {
+            return !(currentAuthority.Contains($"\\{AuthConstants.Tenants.Common}")
+                || currentAuthority.Contains($"\\{AuthConstants.Tenants.Consumers}")
+                || currentAuthority.Contains($"\\{AuthConstants.Tenants.Organizations}"));
         }
     }
 }
