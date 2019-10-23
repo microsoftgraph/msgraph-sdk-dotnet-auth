@@ -44,7 +44,7 @@ namespace Microsoft.Graph.Auth.Extensions
                 AcquireTokenSilentParameterBuilder tokenSilentBuilder = clientApplication.AcquireTokenSilent(msalAuthProviderOption.Scopes, account)
                     .WithForceRefresh(msalAuthProviderOption.ForceRefresh);
 
-                if (IsSkipAuthority(clientApplication.Authority))
+                if (ContainsWellKnownTenantName(clientApplication.Authority))
                     tokenSilentBuilder.WithAuthority(clientApplication.Authority);
 
                 return await tokenSilentBuilder.ExecuteAsync();
@@ -65,11 +65,23 @@ namespace Microsoft.Graph.Auth.Extensions
             }
         }
 
-        private static bool IsSkipAuthority(string currentAuthority)
+        /// <summary>
+        /// Determines if an authority url has a `well known` tenant name (common, consumers, organizations) in its tenant segment.
+        /// </summary>
+        /// <param name="currentAuthority">The authority url to check.</param>
+        /// <returns>True is pre-defined tenant names are present, and false if not. </returns>
+        internal static bool ContainsWellKnownTenantName(string currentAuthority)
         {
-            return !(currentAuthority.Contains($"\\{AuthConstants.Tenants.Common}")
-                || currentAuthority.Contains($"\\{AuthConstants.Tenants.Consumers}")
-                || currentAuthority.Contains($"\\{AuthConstants.Tenants.Organizations}"));
+            if (!Uri.IsWellFormedUriString(currentAuthority, UriKind.Absolute))
+                throw new ArgumentException("Invalid authority URI set.");
+
+            Uri authorityUri = new Uri(currentAuthority);
+
+            return (new List<string>
+            {   AuthConstants.Tenants.Common,
+                AuthConstants.Tenants.Consumers,
+                AuthConstants.Tenants.Organizations
+            }).Contains(authorityUri.Segments[1].Replace(@"/", string.Empty));
         }
     }
 }
