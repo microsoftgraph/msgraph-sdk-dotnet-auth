@@ -10,9 +10,7 @@
     <PackageId>Microsoft.Graph.Auth</PackageId>
     <PackageTags>Microsoft Office365;Graph;GraphServiceClient;Outlook;OneDrive;AzureAD;GraphAPI;Productivity;SharePoint;Intune;SDK;MSAL</PackageTags>
     <PackageReleaseNotes>
-      - Update all authentication providers to use MSAL V3+.
-      - Update UsernamePasswordProvider to use SecureString for passwords.
-      - Remove ITokenStorageProvider interface.
+      - Update MSAL dependency from delisted 4.8.0 to 4.8.2.
     </PackageReleaseNotes>
     <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
     <PackageLicenseUrl>http://aka.ms/devservicesagreement</PackageLicenseUrl>
@@ -22,7 +20,7 @@
     <DelaySign>true</DelaySign>
     <!--Skip 1.13.0-->
     <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>preview.3</VersionSuffix>
+    <VersionSuffix>preview.4</VersionSuffix>
     <AssemblyOriginatorKeyFile>35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
