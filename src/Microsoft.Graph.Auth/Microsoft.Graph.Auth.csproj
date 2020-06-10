@@ -13,7 +13,7 @@
       - Updates licensing agreement
     </PackageReleaseNotes>
     <PackageProjectUrl>https://developer.microsoft.com/graph</PackageProjectUrl>
-    <PackageLicenseUrl>LICENSE.txt</PackageLicenseUrl>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/microsoftgraph/msgraph-sdk-dotnet-auth/dev/LICENSE.txt</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <SignAssembly>false</SignAssembly>
