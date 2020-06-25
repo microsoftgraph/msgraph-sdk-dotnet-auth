@@ -164,12 +164,12 @@ IConfidentialClientApplication confidentialClientApplication = ConfidentialClien
                 .Create(clientId)
                 .WithTenantId(tenantID)
                 // The Authority is a required parameter when your application is configured 
-                // to accept authentications only from the tenant where it is registered
+                // to accept authentications only from the tenant where it is registered.
                 .WithAuthority(authority)
                 .WithClientSecret(clientSecret)
                 .Build();
                 
-// Use the API reference to determine which scopes are appropriate for your API request
+// Use the API reference to determine which scopes are appropriate for your API request.
 // e.g. - https://docs.microsoft.com/en-us/graph/api/user-get?view=graph-rest-1.0&tabs=http
 var scopes = new string[] { "User.Read" };
 // Create an authentication provider.
@@ -180,7 +180,7 @@ var userAssertion = new UserAssertion(jsonWebToken);
 // Configure GraphServiceClient with provider.
 GraphServiceClient graphServiceClient = new GraphServiceClient(authenticationProvider);
 // Make a request
-var me = await graphServiceClient.Me.Request().WithUserAssertion(userAssertion).WithForceRefresh(true).GetAsync();
+var me = await graphServiceClient.Me.Request().WithUserAssertion(userAssertion).GetAsync();
 ```
 
 # Documentation
