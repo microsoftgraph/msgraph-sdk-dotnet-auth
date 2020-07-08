@@ -156,6 +156,33 @@ GraphServiceClient graphServiceClient = new GraphServiceClient(authenticationPro
 var me = await graphServiceClient.Me.Request().WithForceRefresh(true).GetAsync();
 ```
 
+## 2. On behalf of provider
+
+```csharp
+// Create a client application.
+IConfidentialClientApplication confidentialClientApplication = ConfidentialClientApplicationBuilder
+                .Create(clientId)
+                .WithTenantId(tenantID)
+                // The Authority is a required parameter when your application is configured 
+                // to accept authentications only from the tenant where it is registered.
+                .WithAuthority(authority)
+                .WithClientSecret(clientSecret)
+                .Build();
+                
+// Use the API reference to determine which scopes are appropriate for your API request.
+// e.g. - https://docs.microsoft.com/en-us/graph/api/user-get?view=graph-rest-1.0&tabs=http
+var scopes = new string[] { "User.Read" };
+// Create an authentication provider.
+ClientCredentialProvider authenticationProvider = new OnBehalfOfProvider(confidentialClientApplication, scopes);
+
+var jsonWebToken = actionContext.Request.Headers.Authorization.Parameter;
+var userAssertion = new UserAssertion(jsonWebToken);
+// Configure GraphServiceClient with provider.
+GraphServiceClient graphServiceClient = new GraphServiceClient(authenticationProvider);
+// Make a request
+var me = await graphServiceClient.Me.Request().WithUserAssertion(userAssertion).GetAsync();
+```
+
 # Documentation
 * MSAL .Net [authentication scenarios](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/scenarios).
 * For documentations on provider arguments, refer to [MSAL documentation](https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/wiki/Scenarios#public-client-and-confidential-client-applications).
