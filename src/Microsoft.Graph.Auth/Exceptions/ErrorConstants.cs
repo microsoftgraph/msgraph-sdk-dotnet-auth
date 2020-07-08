@@ -18,7 +18,7 @@ namespace Microsoft.Graph.Auth
 
         internal static class Message
         {
-            internal const string AuthenticationChallengeRequired = "Authentication challange is required.";
+            internal const string AuthenticationChallengeRequired = "Authentication challenge is required.";
             internal const string MissingRetryAfterHeader = "Missing retry after header.";
             internal const string MissingClaim = "Missing '{0}' claim.";
             internal const string NullValue = "{0} cannot be null.";
