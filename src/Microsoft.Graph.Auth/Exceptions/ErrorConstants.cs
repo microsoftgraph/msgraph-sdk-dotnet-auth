@@ -23,7 +23,7 @@ namespace Microsoft.Graph.Auth
             internal const string MissingClaim = "Missing '{0}' claim.";
             internal const string NullValue = "{0} cannot be null.";
             internal static string UnexpectedMsalException = "Unexpected exception returned from MSAL.";
-            internal static string UnexpectedException = "Unexpected exception occured while authenticating the request.";
+            internal static string UnexpectedException = "Unexpected exception occurred while authenticating the request.";
             internal const string InvalidJWT = "Invalid JWT access token.";
             internal const string EmptyScopes = "Scopes cannot be empty.";
         }
