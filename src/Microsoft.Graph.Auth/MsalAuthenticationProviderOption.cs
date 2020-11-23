@@ -41,5 +41,10 @@ namespace Microsoft.Graph.Auth
         /// Password to use when authenticating with UsernamePasswordProvider.
         /// </summary>
         public SecureString Password { get; set; }
+
+        /// <summary>
+        /// Claims for a given request
+        /// </summary>
+        public string Claims { get; set; }
     }
 }

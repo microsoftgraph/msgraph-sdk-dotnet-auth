@@ -88,12 +88,19 @@ namespace Microsoft.Graph.Auth
             int retryCount = 0;
             string extraQueryParameter = null;
             do
-            {
+            {   
                 try
                 {
-                    authenticationResult = await ClientApplication.AcquireTokenWithDeviceCode(msalAuthProviderOption.Scopes, DeviceCodeResultCallback)
-                        .WithExtraQueryParameters(extraQueryParameter)
-                        .ExecuteAsync(cancellationToken);
+                    AcquireTokenWithDeviceCodeParameterBuilder parameterBuilder = ClientApplication
+                        .AcquireTokenWithDeviceCode(msalAuthProviderOption.Scopes, DeviceCodeResultCallback)
+                        .WithExtraQueryParameters(extraQueryParameter);
+
+                    if (!string.IsNullOrEmpty(msalAuthProviderOption.Claims))
+                    {
+                        parameterBuilder.WithClaims(msalAuthProviderOption.Claims);
+                    }
+
+                    authenticationResult = await parameterBuilder.ExecuteAsync(cancellationToken);
                     break;
                 }
                 catch (MsalServiceException serviceException)
