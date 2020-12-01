@@ -149,6 +149,11 @@ namespace Microsoft.Graph.Auth
                         .WithExtraQueryParameters(extraQueryParameter)
                         .WithExtraScopesToConsent(null)
                         .WithAuthority(ClientApplication.Authority);
+
+                    if (!string.IsNullOrEmpty(msalAuthProviderOption.Claims))
+                    {
+                        builder.WithClaims(msalAuthProviderOption.Claims);
+                    }
 #if NET45
                     if (ParentWindow != null)
                     {

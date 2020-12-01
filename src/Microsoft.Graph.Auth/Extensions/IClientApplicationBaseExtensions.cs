@@ -52,6 +52,9 @@ namespace Microsoft.Graph.Auth.Extensions
                 if (!ContainsWellKnownTenantName(clientApplication.Authority))
                     tokenSilentBuilder.WithAuthority(clientApplication.Authority);
 
+                if (!string.IsNullOrEmpty(msalAuthProviderOption.Claims))
+                    tokenSilentBuilder.WithClaims(msalAuthProviderOption.Claims);
+
                 return await tokenSilentBuilder.ExecuteAsync();
             }
             catch (MsalException)

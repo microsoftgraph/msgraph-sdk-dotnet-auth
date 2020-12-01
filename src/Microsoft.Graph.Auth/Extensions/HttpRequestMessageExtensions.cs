@@ -11,8 +11,16 @@ namespace Microsoft.Graph.Auth
         internal static AuthenticationProviderOption GetMsalAuthProviderOption(this HttpRequestMessage httpRequestMessage)
         {
             AuthenticationHandlerOption authHandlerOption = httpRequestMessage.GetMiddlewareOption<AuthenticationHandlerOption>();
+            AuthenticationProviderOption authenticationProviderOption = authHandlerOption?.AuthenticationProviderOption as AuthenticationProviderOption ?? new AuthenticationProviderOption();
 
-            return authHandlerOption?.AuthenticationProviderOption as AuthenticationProviderOption ?? new AuthenticationProviderOption();
+            // copy the claims and scopes information
+            if (authHandlerOption?.AuthenticationProviderOption is ICaeAuthenticationProviderOption caeAuthenticationProviderOption)
+            {
+                authenticationProviderOption.Claims = caeAuthenticationProviderOption.Claims;
+                authenticationProviderOption.Scopes = caeAuthenticationProviderOption.Scopes;
+            }
+
+            return authenticationProviderOption;
         }
     }
 }
