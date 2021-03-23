@@ -17,19 +17,24 @@ variables:
   BuildConfiguration: 'release'
 
 steps:
-- task: CredScan@2
-  inputs:
-    toolMajorVersion: 'V2'
+# - task: CredScan@2
+#   inputs:
+#     toolMajorVersion: 'V2'
 
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet restore'
-  inputs:
-    command: restore
-    projects: '**/*.csproj'
+# - task: ComponentGovernanceComponentDetection@0
+#   inputs:
+#     scanType: 'Register'
+#     verbosity: 'Verbose'
+#     alertWarningLevel: 'High'
 
+# We have a separate build for running the tests, because tests are referring to the internal types in the main library.
+# Enabling signing requires a signed dll set in the InternalsVisibleTo attribute with a PublicKey,
+# so building twice before and after enabling signing is cheaper.
+# See https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-messages/cs1726 for more
 - task: DotNetCoreCLI@2
   displayName: 'build solution'
   inputs:
+    command: build
     projects: Microsoft.Graph.Auth.sln
     arguments: '-c $(BuildConfiguration) --no-incremental'
 
@@ -40,38 +45,30 @@ steps:
     projects: 'tests/Microsoft.Graph.Auth.Test/Microsoft.Graph.Auth.Test.csproj'
     arguments: '--configuration $(BuildConfiguration) --verbosity normal'
 
-# - task: ComponentGovernanceComponentDetection@0
-#   inputs:
-#     scanType: 'Register'
-#     verbosity: 'Verbose'
-#     alertWarningLevel: 'High'
+- powershell: |
+    git clean -fdx
+  displayName: 'clean generated assemblies from the test phase'
 
-# - task: PowerShell@2
-#   displayName: 'Enable signing'
-#   inputs:
-#     targetType: filePath
-#     filePath: ./scripts/EnableSigning.ps1
-#     arguments: '-projectPath $(ProjectPath)'
+- task: PowerShell@2
+  displayName: 'Enable signing'
+  inputs:
+    targetType: filePath
+    filePath: ./scripts/EnableSigning.ps1
+    arguments: '-projectPath $(ProjectPath)'
 
-# - task: PowerShell@2
-#   displayName: 'Set or increment preview version'
-#   inputs:
-#     targetType: filePath
-#     filePath: ./scripts/IncrementPreviewVersion.ps1
-#     arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
+- task: PowerShell@2
+  displayName: 'Set or increment preview version'
+  inputs:
+    targetType: filePath
+    filePath: ./scripts/IncrementPreviewVersion.ps1
+    arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
 
-# - task: DotNetCoreCLI@2
-#   displayName: 'build solution'
-#   inputs:
-#     projects: Microsoft.Graph.Auth.sln
-#     arguments: '-c $(BuildConfiguration) --no-incremental'
-
-# - task: DotNetCoreCLI@2
-#   displayName: 'run tests'
-#   inputs:
-#     command: 'test'
-#     projects: 'tests/Microsoft.Graph.Auth.Test/Microsoft.Graph.Auth.Test.csproj'
-#     arguments: '--configuration $(BuildConfiguration) --verbosity normal'
+- task: DotNetCoreCLI@2
+  displayName: 'build solution'
+  inputs:
+    command: build
+    projects: Microsoft.Graph.Auth.sln
+    arguments: '-c $(BuildConfiguration) --no-incremental'
 
 # - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
 #   displayName: 'ESRP DLL Strong Name (Microsoft.Graph.Auth)'
