@@ -47,6 +47,13 @@ steps:
     arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
 
 - task: DotNetCoreCLI@2
+  displayName: 'build test project'
+  inputs:
+    command: 'build'
+    projects: 'tests/Microsoft.Graph.Auth.Test/Microsoft.Graph.Auth.Test.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
+
+- task: DotNetCoreCLI@2
   displayName: 'run tests'
   inputs:
     command: 'test'
