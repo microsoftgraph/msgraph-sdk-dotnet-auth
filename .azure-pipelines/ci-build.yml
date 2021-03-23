@@ -12,6 +12,7 @@ pool:
 
 variables:
   ProjectPath: '.\src\Microsoft.Graph.Auth\Microsoft.Graph.Auth.csproj'
+  PackageName: 'microsoft.graph.auth'
   BuildConfiguration: 'release'
 
 steps:
@@ -43,7 +44,7 @@ steps:
   inputs:
     targetType: filePath
     filePath: ./scripts/IncrementPreviewVersion.ps1
-    arguments: '-packageName $(PACKAGE_NAME) -projectPath $(ProjectPath)'
+    arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
 
 - task: DotNetCoreCLI@2
   displayName: 'run tests'
