@@ -47,11 +47,10 @@ steps:
     arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
 
 - task: DotNetCoreCLI@2
-  displayName: 'build test project'
+  displayName: 'dotnet build'
   inputs:
-    command: 'build'
-    projects: 'tests/Microsoft.Graph.Auth.Test/Microsoft.Graph.Auth.Test.csproj'
-    arguments: '--configuration $(BuildConfiguration)'
+    projects: '$(ProjectPath)'
+    arguments: '-c $(BuildConfiguration) --no-incremental'
 
 - task: DotNetCoreCLI@2
   displayName: 'run tests'
@@ -59,12 +58,6 @@ steps:
     command: 'test'
     projects: 'tests/Microsoft.Graph.Auth.Test/Microsoft.Graph.Auth.Test.csproj'
     arguments: '--configuration $(BuildConfiguration) --verbosity normal'
-
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet build'
-  inputs:
-    projects: '$(ProjectPath)'
-    arguments: '-c $(BuildConfiguration) --no-incremental'
 
 - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
   displayName: 'ESRP DLL Strong Name (Microsoft.Graph.Auth)'
