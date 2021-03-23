@@ -1,4 +1,5 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Licensed under the MIT License.
 
 name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
@@ -16,10 +17,9 @@ variables:
   BuildConfiguration: 'release'
 
 steps:
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
-  displayName: 'Run CredScan'
+- task: CredScan@2
   inputs:
-    debugMode: false
+    toolMajorVersion: 'V2'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet restore'
@@ -27,10 +27,11 @@ steps:
     command: restore
     projects: '**/*.csproj'
 
-- task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
-  displayName: 'Component Detection'
+- task: ComponentGovernanceComponentDetection@0
   inputs:
-    scanType: LogOnly
+    scanType: 'Register'
+    verbosity: 'Verbose'
+    alertWarningLevel: 'High'
 
 - task: PowerShell@2
   displayName: 'Enable signing'
@@ -47,9 +48,9 @@ steps:
     arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet build'
+  displayName: 'build solution'
   inputs:
-    projects: '$(ProjectPath)'
+    projects: Microsoft.Graph.Auth.sln
     arguments: '-c $(BuildConfiguration) --no-incremental'
 
 - task: DotNetCoreCLI@2
