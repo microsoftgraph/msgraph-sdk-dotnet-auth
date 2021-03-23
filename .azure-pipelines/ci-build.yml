@@ -1,0 +1,176 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
+name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+trigger:
+  branches:
+    include:
+      - dev
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  ProjectPath: '.\src\Microsoft.Graph.Auth\Microsoft.Graph.Auth.csproj'
+  BuildConfiguration: 'release'
+
+steps:
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+  displayName: 'Run CredScan'
+  inputs:
+    debugMode: false
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: restore
+    projects: '**/*.csproj'
+
+- task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+  displayName: 'Component Detection'
+  inputs:
+    scanType: LogOnly
+
+- task: PowerShell@2
+  displayName: 'Enable signing'
+  inputs:
+    targetType: filePath
+    filePath: ./scripts/EnableSigning.ps1
+    arguments: '-projectPath $(ProjectPath)'
+
+- task: PowerShell@2
+  displayName: 'Set or increment preview version'
+  inputs:
+    targetType: filePath
+    filePath: ./scripts/IncrementPreviewVersion.ps1
+    arguments: '-packageName $(PACKAGE_NAME) -projectPath $(ProjectPath)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'run tests'
+  inputs:
+    command: 'test'
+    projects: 'tests/Microsoft.Graph.Auth.Test/Microsoft.Graph.Auth.Test.csproj'
+    arguments: '--configuration $(BuildConfiguration) --verbosity normal'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    projects: '$(ProjectPath)'
+    arguments: '-c $(BuildConfiguration) --no-incremental'
+
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: 'ESRP DLL Strong Name (Microsoft.Graph.Auth)'
+  inputs:
+    ConnectedServiceName: 'microsoftgraph ESRP CodeSign DLL and NuGet (AKV)'
+    FolderPath: src/Microsoft.Graph.Auth/bin/release
+    Pattern: Microsoft.Graph.Auth.dll
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
+         {
+             "keyCode": "CP-233863-SN",
+             "operationSetCode": "StrongNameSign",
+             "parameters": [],
+             "toolName": "sign",
+             "toolVersion": "1.0"
+         },
+         {
+             "keyCode": "CP-233863-SN",
+             "operationSetCode": "StrongNameVerify",
+             "parameters": [],
+             "toolName": "sign",
+             "toolVersion": "1.0"
+         }
+     ]
+    SessionTimeout: 20
+
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: 'ESRP DLL CodeSigning (Microsoft.Graph.Auth)'
+  inputs:
+    ConnectedServiceName: 'microsoftgraph ESRP CodeSign DLL and NuGet (AKV)'
+    FolderPath: src/Microsoft.Graph.Auth/bin/release
+    Pattern: Microsoft.Graph.Auth.dll
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
+         {
+             "keyCode": "CP-230012",
+             "operationSetCode": "SigntoolSign",
+             "parameters": [
+                 {
+                     "parameterName": "OpusName",
+                     "parameterValue": "Microsoft"
+                 },
+                 {
+                     "parameterName": "OpusInfo",
+                     "parameterValue": "http://www.microsoft.com"
+                 },
+                 {
+                     "parameterName": "FileDigest",
+                     "parameterValue": "/fd \"SHA256\""
+                 },
+                 {
+                     "parameterName": "PageHash",
+                     "parameterValue": "/NPH"
+                 },
+                 {
+                     "parameterName": "TimeStamp",
+                     "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+                 }
+             ],
+             "toolName": "sign",
+             "toolVersion": "1.0"
+         },
+         {
+             "keyCode": "CP-230012",
+             "operationSetCode": "SigntoolVerify",
+             "parameters": [],
+             "toolName": "sign",
+             "toolVersion": "1.0"
+         }
+     ]
+    SessionTimeout: 20
+
+# arguments are not parsed in DotNetCoreCLI@2 task for `pack` command, that's why we have a custom pack command here
+- powershell: |
+    $projectPath = Join-Path $env:BUILD_SOURCESDIRECTORY $env:PROJECT_PATH
+    dotnet pack $projectPath /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg --no-build --output $env:BUILD_ARTIFACTSTAGINGDIRECTORY --configuration $env:BUILD_CONFIGURATION
+  env:
+    BUILD_CONFIGURATION: $(BuildConfiguration)
+    PROJECT_PATH: $(PROJECT_PATH)
+
+- task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+  displayName: 'ESRP NuGet CodeSigning'
+  inputs:
+    ConnectedServiceName: 'microsoftgraph ESRP CodeSign DLL and NuGet (AKV)'
+    FolderPath: '$(Build.ArtifactStagingDirectory)'
+    Pattern: '*nupkg'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+          [
+              {
+                  "keyCode": "CP-401405",
+                  "operationSetCode": "NuGetSign",
+                  "parameters": [ ],
+                  "toolName": "sign",
+                  "toolVersion": "1.0"
+              },
+              {
+                  "keyCode": "CP-401405",
+                  "operationSetCode": "NuGetVerify",
+                  "parameters": [ ],
+                  "toolName": "sign",
+                  "toolVersion": "1.0"
+              }
+          ]
+    SessionTimeout: 20
+
+- task: CopyFiles@2
+  displayName: 'Copy release scripts to artifact staging directory'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: 'scripts\**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact: Microsoft.Graph.Auth.nupkg and release pipeline scripts'
