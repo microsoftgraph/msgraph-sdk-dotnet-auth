@@ -64,10 +64,10 @@ steps:
     arguments: '-packageName $(PackageName) -projectPath $(ProjectPath)'
 
 - task: DotNetCoreCLI@2
-  displayName: 'build solution'
+  displayName: 'build auth library'
   inputs:
     command: build
-    projects: Microsoft.Graph.Auth.sln
+    projects: $(ProjectPath)'
     arguments: '-c $(BuildConfiguration) --no-incremental'
 
 # - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
