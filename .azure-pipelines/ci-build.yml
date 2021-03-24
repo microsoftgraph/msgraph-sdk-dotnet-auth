@@ -149,7 +149,7 @@ steps:
     dotnet pack $projectPath /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg --no-build --output $env:BUILD_ARTIFACTSTAGINGDIRECTORY --configuration $env:BUILD_CONFIGURATION
   env:
     BUILD_CONFIGURATION: $(BuildConfiguration)
-    PROJECT_PATH: $(PROJECT_PATH)
+    PROJECT_PATH: $(ProjectPath)
 
 - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
   displayName: 'ESRP NuGet CodeSigning'
