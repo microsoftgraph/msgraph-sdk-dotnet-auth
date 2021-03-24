@@ -67,7 +67,7 @@ steps:
   displayName: 'build auth library'
   inputs:
     command: build
-    projects: $(ProjectPath)'
+    projects: $(ProjectPath)
     arguments: '-c $(BuildConfiguration) --no-incremental'
 
 # - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
