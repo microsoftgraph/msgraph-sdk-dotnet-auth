@@ -6,7 +6,7 @@ name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 trigger:
   branches:
     include:
-      - dev
+      - zengin/ci-build-yaml
 
 pool:
   vmImage: 'windows-latest'
