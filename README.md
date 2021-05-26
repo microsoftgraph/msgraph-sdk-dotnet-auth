@@ -80,6 +80,8 @@ This provider leverages [MSALs Device Code Flow](https://github.com/AzureAD/micr
 ```csharp
 IPublicClientApplication publicClientApplication = PublicClientApplicationBuilder
                 .Create(clientId)
+                .WithTenantId(tenantId)    
+                .WithRedirectUri("https://login.microsoftonline.com/common/oauth2/nativeclient")
                 .Build();
 
 DeviceCodeProvider authenticationProvider = new DeviceCodeProvider(publicClientApplication, scopes);
