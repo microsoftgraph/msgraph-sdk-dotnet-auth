@@ -1,3 +1,5 @@
+This client library has been deprecated in favor of the [TokenCredential classes provided in the Azure.Identity](https://docs.microsoft.com/en-us/dotnet/api/azure.identity?view=azure-dotnet) namespace. You can use the new **TokenCredential** class with [Microsoft.Graph](https://www.nuget.org/packages/Microsoft.Graph/) v4.x and greater.
+
 # Microsoft Graph .NET Authentication Provider Library
 [![Build status](https://o365exchange.visualstudio.com/O365%20Sandbox/_apis/build/status/Microsoft%20Graph/.Net/msgraph-sdk-dotnet-auth-build-and-packaging)](https://o365exchange.visualstudio.com/O365%20Sandbox/_build/latest?definitionId=2425)
 
